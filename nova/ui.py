@@ -88,22 +88,28 @@ def rebuild_index() -> None:
 # --- design system ------------------------------------------------------------
 # Three patterns from the NovaCell console canvas that Streamlit has no native
 # element for: the letter-spaced uppercase kicker, the 2px structural rule, and
-# the muted source footnote. Colours come from currentColor and the theme's
-# primary so both light and dark variants follow config.toml rather than being
-# hard-coded here.
+# the muted source footnote.
+#
+# Streamlit 1.62 declares no CSS custom properties — :root carries none of
+# --primary-color/--text-color/--background-color — so `var(--primary-color, X)`
+# resolves to X every time, in both themes. Anything that must follow the theme
+# uses currentColor; anything that must follow the accent is written out for both
+# grounds under prefers-color-scheme.
 
 _DESIGN_CSS = """
 <style>
   .nc-kicker {
     font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
-    font-weight: 800; color: var(--primary-color, #ec3013);
-    margin: 0 0 2px;
+    font-weight: 800; color: #ec3013; margin: 0 0 2px;
   }
   .nc-kicker-ink { color: currentColor; opacity: .55; }
   .nc-rule { border: 0; border-top: 2px solid currentColor; opacity: .28; margin: 4px 0 12px; }
   .nc-source { font-size: 11px; opacity: .55; margin: 6px 0 0; }
   .nc-num { font-size: 11px; letter-spacing: .08em; font-weight: 800;
-            color: var(--primary-color, #ec3013); margin-right: 8px; }
+            color: #ec3013; margin-right: 8px; }
+  @media (prefers-color-scheme: dark) {
+    .nc-kicker:not(.nc-kicker-ink), .nc-num { color: #ff563c; }
+  }
 </style>
 """
 
@@ -141,20 +147,19 @@ def agent_mark(size: int = 64) -> None:
     icon = round(size * 0.46)
     st.html(
         f'<div style="width:{size}px;height:{size}px;margin:0 auto 16px;'
-        f"background:var(--primary-color, #ec3013) url('{_BOT_DATA_URI}') "
+        f"background:#ec3013 url('{_BOT_DATA_URI}') "
         f'no-repeat center / {icon}px {icon}px;'
         f'box-shadow:0 2px 6px rgba(0,0,0,.18);"></div>'
     )
 
 
 # --- Google sign-in button -------------------------------------------------------
-# The one element in this console that does NOT follow the Modernist system:
-# Google's identity branding guidelines require their own button shape, colour
-# and unaltered four-colour "G" mark, so this is built to their spec rather than
-# the app's zero-radius rule. `key` gives Streamlit's `st-key-<key>` hook
-# (stable since 1.36) something to target — it's the only way to skin a real
-# st.button rather than fake one with raw HTML, which would need its own click
-# wiring to reach st.login.
+# Google's unaltered four-colour "G", on a button shaped by the Modernist system
+# rather than by Google's rounded spec — the login reference makes that trade
+# deliberately, and the mark is the part of their guidance carrying the identity.
+# `key` gives Streamlit's `st-key-<key>` hook (stable since 1.36) something to
+# target — it's the only way to skin a real st.button rather than fake one with
+# raw HTML, which would need its own click wiring to reach st.login.
 
 _GOOGLE_G_SVG = (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18">'
@@ -171,27 +176,38 @@ _GOOGLE_G_SVG = (
 _GOOGLE_G_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(_GOOGLE_G_SVG.encode()).decode()
 
 
-def google_signin_button(label: str, *, key: str, on_click) -> None:
-    """Google's dark "Continue with Google" button, to Google's own spec."""
+def google_signin_button(label: str, *, key: str, on_click, sso_hint: str = "SSO") -> None:
+    """The reference's Google button: squared, ruled, with the SSO hint at the end.
+
+    Google's own branding guidance asks for their rounded button; the login
+    reference deliberately restyles it into the Modernist system — square, 2px
+    ink border, Archivo — and keeps their unaltered four-colour "G", which is the
+    part of the guidance that carries the identity. Following the reference here.
+    """
     st.html(
         f"""
         <style>
           .st-key-{key} button {{
-            background: #131314 !important; border: 1px solid #8e918f !important;
-            border-radius: 24px !important; min-height: 44px;
+            background: transparent !important;
+            border: 2px solid currentColor !important; border-radius: 0 !important;
+            min-height: 48px; padding: 0 16px;
             display: flex !important; align-items: center !important;
-            justify-content: center !important; gap: 10px;
+            justify-content: flex-start !important; gap: 12px;
           }}
           .st-key-{key} button:hover {{
-            background: #1b1b1b !important; border-color: #a8abaf !important;
+            background: rgba(128, 128, 128, .18) !important;
           }}
           .st-key-{key} button p {{
-            color: #e3e3e3 !important; font-family: Roboto, Arial, sans-serif !important;
-            font-weight: 500 !important; font-size: 14px !important;
+            font-family: Archivo, sans-serif !important;
+            font-weight: 800 !important; font-size: 14px !important;
           }}
           .st-key-{key} button::before {{
             content: ""; width: 18px; height: 18px; flex: none;
             background: url('{_GOOGLE_G_DATA_URI}') no-repeat center / contain;
+          }}
+          .st-key-{key} button::after {{
+            content: "{sso_hint}"; margin-left: auto;
+            font-size: 11px; letter-spacing: .1em; font-weight: 500; opacity: .55;
           }}
         </style>
         """
@@ -280,3 +296,147 @@ def render_handoff(handoff: dict) -> None:
                 st.caption(label, width="stretch")
                 st.markdown(md(f"**{value}**"), width="content")
         source_note(f"Handoff {handoff['handoff_id']}")
+
+
+# --- login screen ----------------------------------------------------------------
+# Converted from "NovaTeleAgent Login.html" — the split layout with a vermilion
+# brand panel on the left and the sign-in column on the right.
+#
+# The mark is the reference's own: a dark square, an "N" letterform, and a
+# vermilion dot at the corner. Encoded as a standalone SVG document and loaded as
+# a CSS background for the same reason as the bot glyph above — st.html runs its
+# body through DOMPurify, which strips raw <svg>/<path> from the returned tree.
+
+_NOVA_MARK_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
+    '<rect x="1" y="1" width="46" height="46" fill="#201e1d"/>'
+    '<path d="M11 37V11h5.6l14.8 17.2V11H37v26h-5.6L16.6 19.8V37H11z" fill="#f3f2f2"/>'
+    '<circle cx="37.5" cy="10.5" r="4.5" fill="#ec3013"/>'
+    "</svg>"
+)
+_NOVA_MARK_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(_NOVA_MARK_SVG.encode()).decode()
+
+_ACCENT = "#ec3013"
+_ON_ACCENT = "#f3f2f2"
+
+# The reference bleeds its brand panel to the viewport edge. Streamlit's centred
+# layout caps and pads the block container, so the login screen lifts both — and
+# only the login screen, because the console pages want that reading width back.
+_LOGIN_CHROME = """
+<style>
+  .stMainBlockContainer { max-width: 100% !important; padding: 0 !important; }
+  .stAppHeader { background: transparent !important; }
+  [data-testid="stSidebarCollapsedControl"] { display: none; }
+  .nc-login-brand {
+    position: relative; min-height: 100vh; background: __ACCENT__; color: __ON_ACCENT__;
+    padding: 40px 48px; display: flex; flex-direction: column; gap: 40px; overflow: hidden;
+  }
+  .nc-login-brand::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgba(243,242,242,.16) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(243,242,242,.16) 1px, transparent 1px);
+    background-size: 96px 96px;
+  }
+  .nc-login-brand > * { position: relative; }
+  .nc-login-id { display: flex; align-items: center; gap: 14px; }
+  .nc-login-mark {
+    width: 46px; height: 46px; flex: none;
+    background: url('__MARK__') no-repeat center / contain;
+  }
+  .nc-login-name {
+    font-family: Archivo, sans-serif; font-weight: 800; font-size: 19px;
+    letter-spacing: -0.02em; line-height: 1;
+  }
+  .nc-login-tag {
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    opacity: .8; margin-top: 4px;
+  }
+  .nc-login-lede { margin-top: auto; display: flex; flex-direction: column; gap: 24px; }
+  .nc-login-lede h1 {
+    font-family: Archivo, sans-serif; font-weight: 800;
+    font-size: clamp(34px, 3.4vw, 58px); line-height: 1.02; letter-spacing: -0.03em;
+    margin: 0; max-width: 13ch;
+  }
+  .nc-login-lede p { margin: 0; max-width: 40ch; font-size: 16px; line-height: 1.6; opacity: .92; }
+  .nc-login-stats {
+    border-top: 2px solid rgba(243,242,242,.5); padding-top: 20px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .nc-stat-n { font-family: Archivo, sans-serif; font-weight: 800; font-size: 26px; line-height: 1; }
+  .nc-stat-l {
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    opacity: .8; margin-top: 6px;
+  }
+  /* The sign-in column: padded back in (the block container's own padding was
+     stripped for the full bleed) and centred against the brand panel's height. */
+  .st-key-nc-signin {
+    min-height: 100vh; padding: 28px 48px 32px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .nc-login-eyebrow {
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: __ACCENT__; margin-bottom: 10px;
+  }
+  .nc-or { display: flex; align-items: center; gap: 14px; margin: 20px 0 16px; }
+  .nc-or span:first-child, .nc-or span:last-child {
+    flex: 1; height: 2px; background: currentColor; opacity: .28;
+  }
+  .nc-or em {
+    font-style: normal; font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; opacity: .55;
+  }
+  .nc-login-assure {
+    margin-top: 24px; border-top: 2px solid currentColor; padding-top: 14px;
+    font-size: 12px; opacity: .6;
+  }
+  .nc-login-foot { margin-top: 20px; font-size: 12px; opacity: .55; }
+  @media (max-width: 900px) { .nc-login-brand { min-height: auto; padding: 32px 24px; } }
+</style>
+"""
+_LOGIN_CHROME = (
+    _LOGIN_CHROME.replace("__ACCENT__", _ACCENT)
+    .replace("__ON_ACCENT__", _ON_ACCENT)
+    .replace("__MARK__", _NOVA_MARK_DATA_URI)
+)
+
+
+def login_chrome() -> None:
+    """Full-bleed page chrome, for the sign-on screen only."""
+    st.html(_LOGIN_CHROME)
+
+
+def login_brand_panel(name: str, tagline: str, headline: str, lede: str, stats: list[tuple[str, str]]) -> None:
+    """The vermilion half of the login split.
+
+    ``stats`` is a list of ``(value, label)``. The reference filled this row with
+    voice-platform marketing figures; whatever goes here must be true of the
+    product, since this is the page that introduces a system whose entire promise
+    is that it does not invent numbers.
+    """
+    cells = "".join(
+        f'<div><div class="nc-stat-n">{value}</div><div class="nc-stat-l">{label}</div></div>'
+        for value, label in stats
+    )
+    st.html(
+        f"""
+        <div class="nc-login-brand">
+          <div class="nc-login-id">
+            <div class="nc-login-mark"></div>
+            <div>
+              <div class="nc-login-name">{name}</div>
+              <div class="nc-login-tag">{tagline}</div>
+            </div>
+          </div>
+          <div class="nc-login-lede">
+            <h1>{headline}</h1>
+            <p>{lede}</p>
+          </div>
+          <div class="nc-login-stats">{cells}</div>
+        </div>
+        """
+    )
+
+
+def or_divider(label: str = "or") -> None:
+    st.html(f'<div class="nc-or"><span></span><em>{label}</em><span></span></div>')

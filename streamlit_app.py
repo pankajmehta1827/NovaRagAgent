@@ -55,23 +55,22 @@ else:
 
 ui.apply_design()
 
-shell = st.container(horizontal=True, vertical_alignment="center")
-with shell:
-    with st.container(width="stretch"):
-        ui.kicker("NovaCell · Care · AI Support Console")
-    with st.container(width="content"):
-        user = auth.current_user()
-        if user:
-            ui.kicker(user["email"] or user["name"], ink=True)
-        else:
-            ui.kicker("v1", ink=True)
-    if signed_in:
+# The sign-on screen carries its own full-bleed branding, so the console shell
+# stays off until there is a console to frame.
+if signed_in:
+    shell = st.container(horizontal=True, vertical_alignment="center")
+    with shell:
+        with st.container(width="stretch"):
+            ui.kicker("NovaCell · Care · AI Support Console")
+        with st.container(width="content"):
+            user = auth.current_user()
+            ui.kicker(user["email"] or user["name"] if user else "v1", ink=True)
         with st.container(width="content"):
             st.button(
                 "Sign out",
                 icon=":material/logout:",
                 on_click=auth.sign_out,
             )
-ui.rule()
+    ui.rule()
 
 page.run()
