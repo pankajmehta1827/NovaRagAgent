@@ -118,22 +118,32 @@ def apply_design() -> None:
 # set chat.py already draws its avatars from, on a single vermilion square with
 # the system's zero corner radius (the rect's rx is overridden to 0 for that
 # reason — Lucide's own default rounds it).
+#
+# st.html runs its body through DOMPurify, which drops raw <svg>/<path>/<rect>
+# tags from the DOM it hands back — a literal inline <svg> here renders as an
+# empty box. Encoding the glyph as its own standalone SVG document and loading
+# it as a CSS background-image (same technique as the Google "G" below) sails
+# straight past that: DOMPurify only inspects the HTML tree, not image bytes.
 
-_BOT_GLYPH = (
+_BOT_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+    'stroke="#faf7f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
     '<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="0"/>'
     '<path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>'
+    "</svg>"
 )
+_BOT_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(_BOT_SVG.encode()).decode()
 
 
-def agent_mark(size: int = 56) -> None:
+def agent_mark(size: int = 64) -> None:
     """The square badge that stands in for Nova wherever the product introduces
     itself — currently the sign-on card, beside the product name."""
-    icon = round(size * 0.5)
+    icon = round(size * 0.46)
     st.html(
-        f'<div style="width:{size}px;height:{size}px;display:flex;align-items:center;'
-        f'justify-content:center;background:var(--primary-color, #ec3013);margin:0 auto 12px;">'
-        f'<svg width="{icon}" height="{icon}" viewBox="0 0 24 24" fill="none" stroke="#faf7f2" '
-        f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{_BOT_GLYPH}</svg></div>'
+        f'<div style="width:{size}px;height:{size}px;margin:0 auto 16px;'
+        f"background:var(--primary-color, #ec3013) url('{_BOT_DATA_URI}') "
+        f'no-repeat center / {icon}px {icon}px;'
+        f'box-shadow:0 2px 6px rgba(0,0,0,.18);"></div>'
     )
 
 
