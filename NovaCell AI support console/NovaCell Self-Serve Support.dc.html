@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/modernist-7c39ce06-331a-4a7e-89a9-5bca1d0b1b1e/styles.css">
+<script src="_ds/modernist-7c39ce06-331a-4a7e-89a9-5bca1d0b1b1e/_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: var(--color-bg); }
+  a { color: var(--color-accent); }
+  a:hover { color: var(--color-accent-700); }
+  .nc-row { appearance: none; background: transparent; border: 0; border-bottom: 1px solid var(--color-divider); width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 15px 18px; display: grid; grid-template-columns: 26px 1fr 14px; align-items: center; gap: 12px; min-height: 62px; }
+  .nc-row:hover { background: color-mix(in srgb, var(--color-text) 5%, transparent); }
+  .nc-row:active { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+  .nc-num { font-size: 11px; letter-spacing: .08em; color: var(--color-accent); font-weight: 800; }
+  .nc-ttl { font-family: var(--font-heading); font-weight: 800; font-size: 15px; line-height: 1.2; }
+  .nc-sub { font-size: 11.5px; color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-top: 3px; }
+  .nc-tab { appearance: none; background: transparent; border: 0; font: inherit; cursor: pointer; flex: 1; min-height: 48px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+  .nc-tab:hover { color: var(--color-text); }
+  .nc-jump { appearance: none; background: transparent; border: 0; border-bottom: 1px solid var(--color-divider); font: inherit; font-size: 13px; cursor: pointer; text-align: left; padding: 10px 0; width: 100%; display: flex; justify-content: space-between; gap: 12px; }
+  .nc-jump:hover { color: var(--color-accent); }
+</style>
+</helmet>
+
+<div style="min-height: 100vh; display: flex; gap: 48px; padding: 40px 48px 56px; font-family: var(--font-body); color: var(--color-text); align-items: flex-start;">
+
+  <div style="width: 320px; flex: none; position: sticky; top: 40px;">
+    <h6 style="margin: 0 0 10px; color: var(--color-accent);">NovaCell · Care · Prototype</h6>
+    <h1 style="font-size: 38px; margin: 0 0 14px;">Answer it before<br>they call.</h1>
+    <p style="font-size: 14px; max-width: 34ch; margin: 0 0 6px;">Tier-1 contacts are questions NovaCell has already answered in its own documentation. This flow puts the diagnosis, the document and the fix in the customer's hand — and only then offers a human.</p>
+    <hr class="hr">
+    <h6 style="margin: 0 0 6px;">Screens</h6>
+    <div style="display: flex; flex-direction: column;">
+      <button class="nc-jump" onClick="{{ goHome }}"><span>Help home — triage</span><span class="text-muted">01</span></button>
+      <button class="nc-jump" onClick="{{ goData }}"><span>Slow data — live diagnosis</span><span class="text-muted">02</span></button>
+      <button class="nc-jump" onClick="{{ goBill }}"><span>Bill — explained delta</span><span class="text-muted">03</span></button>
+      <button class="nc-jump" onClick="{{ goEsim }}"><span>eSIM — activation stuck</span><span class="text-muted">04</span></button>
+      <button class="nc-jump" onClick="{{ goRoam }}"><span>Roaming — pre-travel check</span><span class="text-muted">05</span></button>
+      <button class="nc-jump" onClick="{{ goVoice }}"><span>Voice — doc answer</span><span class="text-muted">06</span></button>
+      <button class="nc-jump" onClick="{{ goAgent }}"><span>Escalation — warm handoff</span><span class="text-muted">07</span></button>
+    </div>
+    <p style="font-size: 11.5px; margin-top: 18px; color: color-mix(in srgb, var(--color-text) 55%, transparent);">Every answer screen cites the NovaCell document it came from, so care ops can see which article is doing the deflection.</p>
+  </div>
+
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px" width="{{ 402 }}" height="{{ 874 }}">
+
+    <!-- ══ 01 · HELP HOME ══ -->
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--color-bg);">
+        <div style="padding: 68px 18px 14px; border-bottom: 2px solid var(--color-divider);">
+          <h6 style="margin: 0 0 6px; color: var(--color-accent);">Help</h6>
+          <h2 style="font-size: 30px; margin: 0 0 14px;">What's going<br>on with your line?</h2>
+          <input class="input" placeholder="Describe it — “bill higher than usual”">
+        </div>
+
+        <sc-if value="{{ showProactive }}" hint-placeholder-val="{{ true }}">
+          <div style="background: var(--color-accent); color: var(--color-bg); padding: 18px; border-bottom: 2px solid var(--color-divider);">
+            <div style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; opacity: .85;">We already noticed</div>
+            <div style="font-family: var(--font-heading); font-weight: 800; font-size: 20px; line-height: 1.15; margin: 8px 0 6px;">Your line dropped to 3G at 14:20 and stayed there.</div>
+            <div style="font-size: 12.5px; opacity: .9; margin-bottom: 14px;">Cell 262-02-7A31 · SIM profile last refreshed 11 months ago</div>
+            <button class="btn" style="background: var(--color-bg); color: var(--color-accent); justify-content: flex-start; width: 100%;" onClick="{{ goData }}">Run the 20-second check</button>
+          </div>
+        </sc-if>
+
+        <div style="padding: 16px 18px 6px;">
+          <h6 style="margin: 0;">Most asked this week</h6>
+        </div>
+        <div style="border-top: 2px solid var(--color-divider);">
+          <button class="nc-row" onClick="{{ goData }}">
+            <span class="nc-num">01</span>
+            <span><span class="nc-ttl">Slow or dropped mobile data</span><span class="nc-sub">Live check on your line · 20 sec</span></span>
+            <span style="color: var(--color-accent); font-weight: 800;">›</span>
+          </button>
+          <button class="nc-row" onClick="{{ goBill }}">
+            <span class="nc-num">02</span>
+            <span><span class="nc-ttl">A charge I don't recognise</span><span class="nc-sub">August bill is €18.90 above your average</span></span>
+            <span style="color: var(--color-accent); font-weight: 800;">›</span>
+          </button>
+          <button class="nc-row" onClick="{{ goEsim }}">
+            <span class="nc-num">03</span>
+            <span><span class="nc-ttl">SIM or eSIM won't activate</span><span class="nc-sub">One eSIM profile issued, not installed</span></span>
+            <span style="color: var(--color-accent); font-weight: 800;">›</span>
+          </button>
+          <button class="nc-row" onClick="{{ goRoam }}">
+            <span class="nc-num">04</span>
+            <span><span class="nc-ttl">Set up roaming before I travel</span><span class="nc-sub">Trip found in your calendar · Istanbul, 12 Sep</span></span>
+            <span style="color: var(--color-accent); font-weight: 800;">›</span>
+          </button>
+          <button class="nc-row" onClick="{{ goVoice }}">
+            <span class="nc-num">05</span>
+            <span><span class="nc-ttl">Calls fail or cut out</span><span class="nc-sub">Answer from NovaCell docs · 1 min read</span></span>
+            <span style="color: var(--color-accent); font-weight: 800;">›</span>
+          </button>
+          <button class="nc-row" onClick="{{ goAccount }}">
+            <span class="nc-num">06</span>
+            <span><span class="nc-ttl">Account, PIN and app basics</span><span class="nc-sub">Answer from NovaCell docs · 1 min read</span></span>
+            <span style="color: var(--color-accent); font-weight: 800;">›</span>
+          </button>
+        </div>
+
+        <div style="flex: 1;"></div>
+        <div style="padding: 18px; border-top: 2px solid var(--color-divider); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <span style="font-size: 12.5px; max-width: 22ch;">Rather not do this yourself?</span>
+          <button class="btn btn-secondary" onClick="{{ goAgent }}">Message an agent</button>
+        </div>
+        <div style="display: flex; border-top: 2px solid var(--color-divider); background: var(--color-surface); padding-bottom: 26px;">
+          <button class="nc-tab">Plan</button>
+          <button class="nc-tab" onClick="{{ goBill }}">Bill</button>
+          <button class="nc-tab">Usage</button>
+          <button class="nc-tab" style="color: var(--color-accent);" onClick="{{ goHome }}">Help</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ══ 02 · SLOW DATA ══ -->
+    <sc-if value="{{ isData }}" hint-placeholder-val="{{ false }}">
+      <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--color-bg);">
+        <div style="padding: 62px 18px 12px; border-bottom: 2px solid var(--color-divider); display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-secondary" style="min-height: 44px;" onClick="{{ goHome }}">‹ Help</button>
+          <span style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800;">Mobile data</span>
+        </div>
+
+        <sc-if value="{{ dataScan }}" hint-placeholder-val="{{ true }}">
+          <div style="padding: 22px 18px;">
+            <h2 style="font-size: 27px; margin: 0 0 6px;">Checking your line</h2>
+            <p style="font-size: 13px; margin-bottom: 20px;">Reading your SIM profile, the cell you're on and your data allowance. No need to answer questions.</p>
+            <div style="border-top: 2px solid var(--color-divider);">
+              <sc-for list="{{ checks }}" as="c" hint-placeholder-count="4">
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--color-divider); align-items: baseline;">
+                  <span style="font-family: var(--font-heading); font-weight: 800; font-size: 14px;">{{ c.label }}</span>
+                  <span style="font-size: 12px; color: var(--color-accent-700); font-weight: 800;">{{ c.value }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ dataResult }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 22px 18px;">
+            <span class="tag tag-accent">2 causes found</span>
+            <h2 style="font-size: 27px; margin: 12px 0 8px;">Your SIM profile is stale, and 4G Calling is off.</h2>
+            <p style="font-size: 13px;">Both are fixable from here. The first one takes your line offline for about 30 seconds.</p>
+            <div style="border-top: 2px solid var(--color-divider); margin-top: 6px;">
+              <div style="padding: 16px 0; border-bottom: 1px solid var(--color-divider);">
+                <div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px;">Re-provision the SIM profile</div>
+                <p style="font-size: 12.5px; margin: 6px 0 12px;">Your profile still carries a 2024 network setting that keeps this handset off the 4G core. Re-issuing it is what our agents do first.</p>
+                <button class="btn btn-primary btn-block" onClick="{{ fixProfile }}">Re-provision now · 30 sec</button>
+              </div>
+              <div style="padding: 16px 0; border-bottom: 1px solid var(--color-divider);">
+                <div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px;">Turn on 4G Calling (VoLTE)</div>
+                <p style="font-size: 12.5px; margin: 6px 0 12px;">Without it, every call drops your data to 3G for the duration.</p>
+                <button class="btn btn-secondary btn-block" onClick="{{ fixVolte }}">Enable on this line</button>
+              </div>
+              <div style="padding: 16px 0;">
+                <h6 style="margin: 0 0 8px;">Ruled out</h6>
+                <p class="text-muted" style="font-size: 12px; margin: 0;">Data allowance (41 of 50 GB) · outage in your area · device blocklist · unpaid balance. None of these apply, so nobody needs to ask you about them.</p>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ dataDone }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 22px 18px;">
+            <div style="background: var(--color-accent); color: var(--color-bg); padding: 18px; margin-bottom: 20px;">
+              <div style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; opacity: .85;">Done at 15:04</div>
+              <div style="font-family: var(--font-heading); font-weight: 800; font-size: 24px; line-height: 1.12; margin-top: 8px;">Back on 4G. 48.2 Mbps, up from 1.1.</div>
+            </div>
+            <h6 style="margin: 0 0 8px;">What changed</h6>
+            <p style="font-size: 13px;">Profile re-issued and 4G Calling switched on. We'll watch this line for 48 hours and message you if it slips again — you don't need to check back.</p>
+            <hr class="hr">
+            <div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px; margin-bottom: 12px;">Did that solve it?</div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-primary" onClick="{{ goHome }}">Yes, done</button>
+              <button class="btn btn-secondary" onClick="{{ goAgent }}">No — get me a person</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- ══ 03 · BILL ══ -->
+    <sc-if value="{{ isBill }}" hint-placeholder-val="{{ false }}">
+      <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--color-bg);">
+        <div style="padding: 62px 18px 12px; border-bottom: 2px solid var(--color-divider); display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-secondary" style="min-height: 44px;" onClick="{{ goHome }}">‹ Help</button>
+          <span style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800;">August bill</span>
+        </div>
+        <div style="padding: 22px 18px;">
+          <h2 style="font-size: 27px; margin: 0 0 4px;">€61.40</h2>
+          <p style="font-size: 13px; margin-bottom: 18px;"><span style="color: var(--color-accent-700); font-weight: 800;">€18.90 above</span> your usual €42.50. Three lines explain all of it.</p>
+          <table class="table">
+            <thead><tr><th>Line</th><th style="text-align: right;">Δ</th></tr></thead>
+            <tbody>
+              <tr><td><div style="font-weight: 800;">Data used in Turkey</div><div class="nc-sub">3.1 GB outside your EU zone · 14–19 Aug</div></td><td style="text-align: right; font-weight: 800;">€12.00</td></tr>
+              <tr><td><div style="font-weight: 800;">Extra data pack</div><div class="nc-sub">Auto-added when you hit 50 GB on 27 Aug</div></td><td style="text-align: right; font-weight: 800;">€5.90</td></tr>
+              <tr><td><div style="font-weight: 800;">Plan change, pro-rated</div><div class="nc-sub">Unlimited Flex from 22 Aug · part month</div></td><td style="text-align: right; font-weight: 800;">€1.00</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top: 20px; border-top: 2px solid var(--color-divider); padding-top: 16px;">
+            <h6 style="margin: 0 0 8px;">Stop it happening again</h6>
+            <button class="btn btn-primary btn-block" onClick="{{ goRoam }}">Add a travel pack for your next trip</button>
+            <button class="btn btn-secondary btn-block" onClick="{{ goHome }}">Cap auto data packs at €0</button>
+            <button class="btn btn-ghost" style="margin-top: 14px;" onClick="{{ goAgent }}">One of these is wrong — dispute it</button>
+          </div>
+          <p class="text-muted" style="font-size: 11px; margin-top: 18px;">Source: NovaCell tariff doc BIL-114 “Out-of-zone data rates” and BIL-207 “Automatic data packs”.</p>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ══ 04 · eSIM ══ -->
+    <sc-if value="{{ isEsim }}" hint-placeholder-val="{{ false }}">
+      <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--color-bg);">
+        <div style="padding: 62px 18px 12px; border-bottom: 2px solid var(--color-divider); display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-secondary" style="min-height: 44px;" onClick="{{ goHome }}">‹ Help</button>
+          <span style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800;">eSIM activation</span>
+        </div>
+        <div style="padding: 22px 18px;">
+          <span class="tag tag-accent">Stuck at step 2 of 3</span>
+          <h2 style="font-size: 27px; margin: 12px 0 8px;">Your eSIM was issued, but never installed.</h2>
+          <p style="font-size: 13px;">Profile NC-8842-QK has been waiting since 21 Aug. It can only be installed once, so don't scan the old email QR — it's expired.</p>
+          <div style="border-top: 2px solid var(--color-divider); margin-top: 10px;">
+            <div style="display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--color-divider); align-items: center;">
+              <span class="nc-num">01</span><span style="font-weight: 800; font-size: 14px;">Order placed</span><span class="tag tag-neutral">Done</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--color-divider); align-items: center;">
+              <span class="nc-num">02</span><span style="font-weight: 800; font-size: 14px;">Install the profile</span><span class="tag tag-outline">You are here</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--color-divider); align-items: center;">
+              <span class="nc-num">03</span><span style="font-weight: 800; font-size: 14px;">Number moves across</span><span class="tag tag-neutral">2 min after</span>
+            </div>
+          </div>
+          <div style="margin-top: 20px;">
+            <button class="btn btn-primary btn-block" onClick="{{ goEsimDone }}">Install on this iPhone now</button>
+            <button class="btn btn-secondary btn-block" onClick="{{ goEsimDone }}">Send a fresh QR to another phone</button>
+          </div>
+          <sc-if value="{{ esimDone }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--color-accent); color: var(--color-bg); padding: 16px; margin-top: 18px;">
+              <div style="font-family: var(--font-heading); font-weight: 800; font-size: 18px; line-height: 1.15;">Profile installing. Keep Wi-Fi on for two minutes.</div>
+              <div style="font-size: 12px; opacity: .9; margin-top: 6px;">Your old SIM keeps working until the swap completes.</div>
+            </div>
+          </sc-if>
+          <p class="text-muted" style="font-size: 11px; margin-top: 18px;">Source: NovaCell doc SIM-031 “eSIM profile lifecycle”.</p>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ══ 05 · ROAMING ══ -->
+    <sc-if value="{{ isRoam }}" hint-placeholder-val="{{ false }}">
+      <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--color-bg);">
+        <div style="padding: 62px 18px 12px; border-bottom: 2px solid var(--color-divider); display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-secondary" style="min-height: 44px;" onClick="{{ goHome }}">‹ Help</button>
+          <span style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800;">Before you travel</span>
+        </div>
+        <div style="padding: 22px 18px;">
+          <h6 style="margin: 0 0 6px; color: var(--color-accent);">Istanbul · 12–19 Sep</h6>
+          <h2 style="font-size: 27px; margin: 0 0 8px;">Two of four things are ready.</h2>
+          <p style="font-size: 13px;">Turkey sits outside your EU zone — the same thing that added €12 to your August bill.</p>
+          <div style="border-top: 2px solid var(--color-divider); margin-top: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 15px 0; border-bottom: 1px solid var(--color-divider); align-items: center;">
+              <span><span style="font-weight: 800; font-size: 14px;">Roaming permitted on your line</span><span class="nc-sub">No credit hold, no bar</span></span><span class="tag tag-neutral">Ready</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 15px 0; border-bottom: 1px solid var(--color-divider); align-items: center;">
+              <span><span style="font-weight: 800; font-size: 14px;">4G Calling abroad</span><span class="nc-sub">Enabled on 12 Aug</span></span><span class="tag tag-neutral">Ready</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 15px 0; border-bottom: 1px solid var(--color-divider); align-items: center;">
+              <span><span style="font-weight: 800; font-size: 14px;">A data pack for Turkey</span><span class="nc-sub">Without one: €3.90 per GB, uncapped</span></span><span class="tag tag-outline">Needed</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 15px 0; border-bottom: 1px solid var(--color-divider); align-items: center;">
+              <span><span style="font-weight: 800; font-size: 14px;">Spend cap while abroad</span><span class="nc-sub">Currently none set</span></span><span class="tag tag-outline">Needed</span>
+            </div>
+          </div>
+          <sc-if value="{{ roamDone }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--color-accent); color: var(--color-bg); padding: 16px; margin-top: 18px;">
+              <div style="font-family: var(--font-heading); font-weight: 800; font-size: 18px; line-height: 1.15;">Travel 5 GB added, cap set at €25.</div>
+              <div style="font-size: 12px; opacity: .9; margin-top: 6px;">Starts when you land. We'll text you the local network settings on arrival.</div>
+            </div>
+          </sc-if>
+          <div style="margin-top: 20px; border-top: 2px solid var(--color-divider); padding-top: 16px;">
+            <button class="btn btn-primary btn-block" onClick="{{ finishRoam }}">Add Travel 5 GB · €14 and cap at €25</button>
+            <button class="btn btn-secondary btn-block" onClick="{{ goHome }}">Remind me the day before I fly</button>
+          </div>
+          <p class="text-muted" style="font-size: 11px; margin-top: 18px;">Source: NovaCell doc ROA-052 “Zone B rates and packs”.</p>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ══ 06 · VOICE (doc answer) ══ -->
+    <sc-if value="{{ isVoice }}" hint-placeholder-val="{{ false }}">
+      <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--color-bg);">
+        <div style="padding: 62px 18px 12px; border-bottom: 2px solid var(--color-divider); display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-secondary" style="min-height: 44px;" onClick="{{ goHome }}">‹ Help</button>
+          <span style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800;">Calls</span>
+        </div>
+        <div style="padding: 22px 18px;">
+          <h6 style="margin: 0 0 6px; color: var(--color-accent);">Answer · doc VOI-018</h6>
+          <h2 style="font-size: 27px; margin: 0 0 10px;">Calls cutting out is almost always one of three things.</h2>
+          <div style="border-top: 2px solid var(--color-divider);">
+            <div style="padding: 15px 0; border-bottom: 1px solid var(--color-divider);">
+              <div style="font-weight: 800; font-size: 15px;">Wi-Fi Calling is fighting a weak network</div>
+              <p style="font-size: 12.5px; margin: 6px 0 0;">On your line it's on. If calls drop as you leave the house, that's the handover. Turn it off for a day and see.</p>
+            </div>
+            <div style="padding: 15px 0; border-bottom: 1px solid var(--color-divider);">
+              <div style="font-weight: 800; font-size: 15px;">4G Calling was off until today</div>
+              <p style="font-size: 12.5px; margin: 6px 0 0;">Calls fell back to 3G, which is being switched off region by region. We enabled it at 15:04.</p>
+            </div>
+            <div style="padding: 15px 0; border-bottom: 1px solid var(--color-divider);">
+              <div style="font-weight: 800; font-size: 15px;">One cell near you is being rebuilt</div>
+              <p style="font-size: 12.5px; margin: 6px 0 0;">Works at 262-02-7A31 finish 4 Sep. Nothing to do, and no need to report it.</p>
+            </div>
+          </div>
+          <div style="margin-top: 20px;">
+            <button class="btn btn-primary btn-block" onClick="{{ goHome }}">That answers it</button>
+            <button class="btn btn-secondary btn-block" onClick="{{ goAgent }}">Still dropping calls</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ══ 06b · ACCOUNT (doc answer) ══ -->
+    <sc-if value="{{ isAccount }}" hint-placeholder-val="{{ false }}">
+      <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--color-bg);">
+        <div style="padding: 62px 18px 12px; border-bottom: 2px solid var(--color-divider); display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-secondary" style="min-height: 44px;" onClick="{{ goHome }}">‹ Help</button>
+          <span style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800;">Account</span>
+        </div>
+        <div style="padding: 22px 18px;">
+          <h6 style="margin: 0 0 6px; color: var(--color-accent);">Answer · doc ACC-006</h6>
+          <h2 style="font-size: 27px; margin: 0 0 10px;">PINs, PUKs and who can change what.</h2>
+          <div style="border-top: 2px solid var(--color-divider);">
+            <div style="padding: 15px 0; border-bottom: 1px solid var(--color-divider);">
+              <div style="font-weight: 800; font-size: 15px;">Your PUK is here, not in a phone call</div>
+              <p style="font-size: 12.5px; margin: 6px 0 0;">Reveal it below after a Face ID check. Three wrong PIN attempts is what locks the SIM.</p>
+              <button class="btn btn-secondary btn-block">Reveal PUK</button>
+            </div>
+            <div style="padding: 15px 0; border-bottom: 1px solid var(--color-divider);">
+              <div style="font-weight: 800; font-size: 15px;">Only the account holder can change the plan</div>
+              <p style="font-size: 12.5px; margin: 6px 0 0;">You're listed as holder on this account, so nothing needs authorising by an agent.</p>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" style="margin-top: 20px;" onClick="{{ goHome }}">That answers it</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ══ 07 · ESCALATION ══ -->
+    <sc-if value="{{ isAgent }}" hint-placeholder-val="{{ false }}">
+      <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--color-bg);">
+        <div style="padding: 62px 18px 12px; border-bottom: 2px solid var(--color-divider); display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-secondary" style="min-height: 44px;" onClick="{{ goHome }}">‹ Help</button>
+          <span style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800;">Talk to NovaCell</span>
+        </div>
+        <div style="padding: 22px 18px;">
+          <h2 style="font-size: 27px; margin: 0 0 8px;">You'll skip the questions.</h2>
+          <p style="font-size: 13px;">Everything the app already knows goes with you, so the agent opens with your case, not with “can I take your number?”.</p>
+          <div style="background: var(--color-surface); padding: 16px; margin: 6px 0 18px;">
+            <h6 style="margin: 0 0 10px;">Attached to your chat</h6>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; border-bottom: 1px solid var(--color-divider); padding-bottom: 8px;"><span>Line diagnostic, 15:04</span><span style="font-weight: 800;">Attached</span></div>
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; border-bottom: 1px solid var(--color-divider); padding-bottom: 8px;"><span>Fixes already tried</span><span style="font-weight: 800;">2</span></div>
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px;"><span>Docs you were shown</span><span style="font-weight: 800;">VOI-018, BIL-114</span></div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; border-top: 2px solid var(--color-divider); border-bottom: 2px solid var(--color-divider); padding: 14px 0;">
+            <span style="font-size: 12.5px;">Chat, typical reply</span><span style="font-family: var(--font-heading); font-weight: 800; font-size: 20px;">2 min</span>
+          </div>
+          <button class="btn btn-primary btn-block" style="margin-top: 18px;">Start the chat</button>
+          <button class="btn btn-secondary btn-block" onClick="{{ goHome }}">Actually, let me try that fix first</button>
+          <p class="text-muted" style="font-size: 11px; margin-top: 18px;">Voice line 0800 44 22 is open 08:00–20:00, and will ask you to repeat this context.</p>
+        </div>
+      </div>
+    </sc-if>
+
+  </x-import>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;proactiveBanner&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;},&quot;scanSpeed&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:520,&quot;min&quot;:120,&quot;max&quot;:1200,&quot;step&quot;:40,&quot;unit&quot;:&quot;ms&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+const BASE_CHECKS = [
+  { label: 'SIM profile', value: '…' },
+  { label: 'Serving cell', value: '…' },
+  { label: '4G Calling', value: '…' },
+  { label: 'Data allowance', value: '…' },
+];
+const RESULTS = ['Stale · 2024 setting', 'Congested 262-02-7A31', 'Disabled', '41 of 50 GB'];
+
+class Component extends DCLogic {
+  state = { route: 'home', step: 0, checks: BASE_CHECKS, esimDone: false, roamDone: false };
+  timers = [];
+
+  clear() { this.timers.forEach(clearTimeout); this.timers = []; }
+  componentWillUnmount() { this.clear(); }
+
+  go = (route) => {
+    this.clear();
+    this.setState({ route, step: 0, checks: BASE_CHECKS, esimDone: false, roamDone: false });
+    if (route === 'data') this.runScan();
+  };
+
+  runScan() {
+    const speed = Math.max(120, this.props.scanSpeed ?? 520);
+    RESULTS.forEach((v, i) => {
+      this.timers.push(setTimeout(() => this.setState((s) => ({
+        checks: s.checks.map((c, j) => (j === i ? { label: c.label, value: v } : c)),
+      })), speed * (i + 1)));
+    });
+    this.timers.push(setTimeout(() => this.setState({ step: 1 }), speed * 4 + 700));
+  }
+
+  renderVals() {
+    const { route, step } = this.state;
+    const skipInterstitial = this.props.escalation === 'straight to chat';
+    return {
+      isHome: route === 'home', isData: route === 'data', isBill: route === 'bill',
+      isEsim: route === 'esim', isRoam: route === 'roam', isVoice: route === 'voice',
+      isAccount: route === 'account', isAgent: route === 'agent',
+      dataScan: route === 'data' && step === 0,
+      dataResult: route === 'data' && step === 1,
+      dataDone: route === 'data' && step === 2,
+      checks: this.state.checks,
+      esimDone: this.state.esimDone,
+      roamDone: this.state.roamDone,
+      showProactive: this.props.proactiveBanner ?? true,
+      goHome: () => this.go('home'),
+      goData: () => this.go('data'),
+      goBill: () => this.go('bill'),
+      goEsim: () => this.go('esim'),
+      goRoam: () => this.go('roam'),
+      goVoice: () => this.go('voice'),
+      goAccount: () => this.go('account'),
+      goAgent: () => this.go(skipInterstitial ? 'agent' : 'agent'),
+      goEsimDone: () => this.setState({ esimDone: true }),
+      finishRoam: () => this.setState({ roamDone: true }),
+      fixProfile: () => {
+        this.clear();
+        this.timers.push(setTimeout(() => this.setState({ step: 2 }), 900));
+      },
+      fixVolte: () => {
+        this.clear();
+        this.timers.push(setTimeout(() => this.setState({ step: 2 }), 900));
+      },
+    };
+  }
+}
+
+</script>
+</body>
+</html>

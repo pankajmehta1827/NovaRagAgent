@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-7c39ce06-331a-4a7e-89a9-5bca1d0b1b1e/styles.css">
+<script src="_ds/modernist-7c39ce06-331a-4a7e-89a9-5bca1d0b1b1e/_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: var(--color-bg); }
+  a { color: var(--color-accent); text-decoration: none; }
+  a:hover { color: var(--color-accent-700); }
+  @keyframes nc-blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .18; } }
+  .nc-dot { width: 6px; height: 6px; background: var(--color-accent); animation: nc-blink 1s infinite; }
+  .nc-dot:nth-child(2) { animation-delay: .18s; }
+  .nc-dot:nth-child(3) { animation-delay: .36s; }
+  .nc-chip { appearance: none; font: inherit; font-size: 13px; cursor: pointer; background: transparent; border: 1px solid var(--color-divider); padding: 8px 12px; text-align: left; color: inherit; }
+  .nc-chip:hover { border-color: var(--color-accent); color: var(--color-accent-700); }
+  .nc-chip:active { background: color-mix(in srgb, var(--color-accent) 14%, transparent); }
+  .nc-side { appearance: none; font: inherit; font-size: 13.5px; cursor: pointer; background: transparent; border: 0; border-bottom: 1px solid var(--color-divider); padding: 13px 0; width: 100%; text-align: left; display: grid; grid-template-columns: 22px 1fr; gap: 10px; color: inherit; }
+  .nc-side:hover { color: var(--color-accent); }
+  .nc-num { font-size: 10px; letter-spacing: .08em; font-weight: 800; color: var(--color-accent); }
+  .nc-lbl { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 800; }
+  .nc-kv { display: grid; grid-template-columns: 1fr auto; gap: 12px; font-size: 12.5px; padding: 9px 0; border-bottom: 1px solid var(--color-divider); }
+</style>
+</helmet>
+
+<template id="__bundler_thumbnail" data-bg-color="#ec3013">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#ec3013"/>
+    <rect x="360" y="300" width="480" height="24" fill="#f3f2f2"/>
+    <rect x="360" y="360" width="300" height="24" fill="#f3f2f2"/>
+    <rect x="360" y="440" width="480" height="8" fill="#f3f2f2" opacity="0.6"/>
+    <text x="360" y="250" font-family="Archivo, sans-serif" font-weight="800" font-size="96" fill="#f3f2f2">NC</text>
+  </svg>
+</template>
+
+<div style="min-height: 100vh; width: 1440px; margin: 0 auto; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body);">
+
+  <div class="nav">
+    <span class="nav-brand">NovaCell</span>
+    <span class="tag tag-outline" style="margin-right: auto; margin-left: -8px;">Assist</span>
+    <a href="#" aria-current="page">Support</a>
+    <a href="#">Bill</a>
+    <a href="#">Plan</a>
+    <a href="#">Usage</a>
+    <span style="width: 2px; height: 20px; background: var(--color-divider);"></span>
+    <span style="font-size: 13px;">Ada Vranje · 06 981 442</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 268px 1fr 328px; align-items: stretch; min-height: calc(100vh - 57px);">
+
+    <!-- ── left: what Assist can settle ── -->
+    <div style="border-right: 2px solid var(--color-divider); padding: 28px 24px;">
+      <h6 style="margin: 0 0 4px; color: var(--color-accent);">Settle it here</h6>
+      <p style="font-size: 12.5px; margin: 0 0 14px;" class="text-muted">Nine of ten contacts are one of these six, and the answer is already written down.</p>
+      <div>
+        <button class="nc-side" onClick="{{ askData }}"><span class="nc-num">01</span><span>Slow or dropped data</span></button>
+        <button class="nc-side" onClick="{{ askBill }}"><span class="nc-num">02</span><span>A charge I don't recognise</span></button>
+        <button class="nc-side" onClick="{{ askEsim }}"><span class="nc-num">03</span><span>SIM / eSIM activation</span></button>
+        <button class="nc-side" onClick="{{ askRoam }}"><span class="nc-num">04</span><span>Roaming before travel</span></button>
+        <button class="nc-side" onClick="{{ askVoice }}"><span class="nc-num">05</span><span>Calls failing or cutting out</span></button>
+        <button class="nc-side" onClick="{{ askAccount }}"><span class="nc-num">06</span><span>Account, PIN, app basics</span></button>
+      </div>
+      <div style="margin-top: 26px; border-top: 2px solid var(--color-divider); padding-top: 16px;">
+        <h6 style="margin: 0 0 8px;">Earlier</h6>
+        <p style="font-size: 12.5px; margin: 0 0 6px;">eSIM install · 21 Aug<br><span class="text-muted">Resolved without an agent</span></p>
+        <p style="font-size: 12.5px; margin: 0;">Roaming in Turkey · 12 Aug<br><span class="text-muted">Resolved without an agent</span></p>
+      </div>
+    </div>
+
+    <!-- ── centre: the conversation ── -->
+    <div style="display: flex; flex-direction: column;">
+      <div style="padding: 34px 40px 26px; border-bottom: 2px solid var(--color-divider);">
+        <h1 style="font-size: 44px; margin: 0 0 10px; max-width: 24ch;">Tell us what's wrong. We'll read your line, not a script.</h1>
+        <p style="font-size: 14px; max-width: 62ch; margin: 0;">Assist checks your SIM, your cell and your bill before it answers, quotes the NovaCell document it used, and hands you to a person with all of it attached if it can't finish the job.</p>
+      </div>
+
+      <div style="flex: 1; padding: 8px 40px 20px;">
+        <sc-for list="{{ messages }}" as="m" hint-placeholder-count="3">
+          <div style="display: grid; grid-template-columns: 92px 1fr; gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--color-divider);">
+            <span class="nc-lbl" style="padding-top: 3px;">{{ m.label }}</span>
+            <div>
+              <sc-if value="{{ m.isText }}" hint-placeholder-val="{{ true }}">
+                <p style="font-size: 15.5px; line-height: 1.5; margin: 0; max-width: 66ch; text-wrap: pretty;">{{ m.text }}</p>
+              </sc-if>
+              <sc-if value="{{ m.isPoster }}" hint-placeholder-val="{{ false }}">
+                <div style="background: var(--color-accent); color: var(--color-bg); padding: 22px 24px; max-width: 60ch;">
+                  <div style="font-family: var(--font-heading); font-weight: 800; font-size: 28px; line-height: 1.1;">{{ m.text }}</div>
+                  <div style="font-size: 13px; opacity: .9; margin-top: 10px;">{{ m.sub }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ m.isDiag }}" hint-placeholder-val="{{ false }}">
+                <div style="max-width: 60ch; border-top: 2px solid var(--color-divider);">
+                  <sc-for list="{{ m.rows }}" as="r" hint-placeholder-count="4">
+                    <div class="nc-kv">
+                      <span style="font-weight: 800;">{{ r.k }}</span>
+                      <span style="color: var(--color-accent-700); font-weight: 800;">{{ r.v }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ m.isActions }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                  <sc-for list="{{ m.items }}" as="a" hint-placeholder-count="2">
+                    <button class="btn btn-secondary" style="min-height: 42px;" onClick="{{ a.onClick }}">{{ a.label }}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ m.cite }}" hint-placeholder-val="{{ false }}">
+                <p class="text-muted" style="font-size: 11.5px; margin: 12px 0 0;">{{ m.cite }}</p>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{ busy }}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; grid-template-columns: 92px 1fr; gap: 20px; padding: 24px 0;">
+            <span class="nc-lbl" style="color: var(--color-accent);">Assist</span>
+            <div style="display: flex; gap: 5px; align-items: center; height: 18px;">
+              <span class="nc-dot"></span><span class="nc-dot"></span><span class="nc-dot"></span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- composer -->
+      <div style="border-top: 2px solid var(--color-divider); padding: 20px 40px 28px; position: sticky; bottom: 0; background: var(--color-bg);">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <button class="nc-chip" onClick="{{ askData }}">My data is crawling today</button>
+          <button class="nc-chip" onClick="{{ askBill }}">Why is August €18.90 higher?</button>
+          <button class="nc-chip" onClick="{{ askRoam }}">I fly to Istanbul on the 12th</button>
+          <button class="nc-chip" onClick="{{ askEsim }}">My eSIM never activated</button>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <input class="input" style="min-height: 46px; font-size: 15px;" placeholder="Describe the problem in your own words" value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onKey }}">
+          <button class="btn btn-primary" style="min-height: 46px; padding-inline: 22px;" onClick="{{ send }}">Ask Assist</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── right: what Assist is reading ── -->
+    <div style="border-left: 2px solid var(--color-divider); padding: 28px 24px;">
+      <h6 style="margin: 0 0 10px;">Your line, live</h6>
+      <div style="border-top: 2px solid var(--color-divider);">
+        <div class="nc-kv"><span>Plan</span><span style="font-weight: 800;">Unlimited Flex</span></div>
+        <div class="nc-kv"><span>Network</span><span style="font-weight: 800;">{{ netState }}</span></div>
+        <div class="nc-kv"><span>Serving cell</span><span style="font-weight: 800;">262-02-7A31</span></div>
+        <div class="nc-kv"><span>Data this cycle</span><span style="font-weight: 800;">41 of 50 GB</span></div>
+        <div class="nc-kv"><span>August bill</span><span style="font-weight: 800;">€61.40</span></div>
+      </div>
+
+      <div style="margin-top: 26px;">
+        <h6 style="margin: 0 0 10px;">Documents in play</h6>
+        <sc-if value="{{ hasDocs }}" hint-placeholder-val="{{ false }}">
+          <div style="border-top: 2px solid var(--color-divider);">
+            <sc-for list="{{ docs }}" as="d" hint-placeholder-count="2">
+              <div style="padding: 11px 0; border-bottom: 1px solid var(--color-divider);">
+                <div style="font-size: 10px; letter-spacing: .1em; font-weight: 800; color: var(--color-accent);">{{ d.code }}</div>
+                <div style="font-size: 13px; margin-top: 3px;">{{ d.title }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noDocs }}" hint-placeholder-val="{{ true }}">
+          <p class="text-muted" style="font-size: 12.5px; margin: 0;">Nothing cited yet. Every answer Assist gives will name the document behind it here.</p>
+        </sc-if>
+      </div>
+
+      <div style="margin-top: 26px; border-top: 2px solid var(--color-divider); padding-top: 18px;">
+        <h6 style="margin: 0 0 10px;">If you'd rather not</h6>
+        <p style="font-size: 12.5px; margin: 0 0 12px;">A human picks this up with your diagnostic, the fixes tried and the documents above already attached.</p>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; border-top: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider); padding: 10px 0; margin-bottom: 14px;">
+          <span style="font-size: 12.5px;">Chat, typical reply</span>
+          <span style="font-family: var(--font-heading); font-weight: 800; font-size: 18px;">2 min</span>
+        </div>
+        <button class="btn btn-secondary btn-block" onClick="{{ handoff }}">Hand me to a person</button>
+        <p class="text-muted" style="font-size: 11px; margin-top: 14px;">Voice 0800 44 22, 08:00–20:00 — and yes, they will ask you to repeat it.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:980}}">
+const WELCOME = [{
+  id: 'w', label: 'Assist', isText: true,
+  text: "Hello Ada. Before you type anything: your line has been on 3G since 14:20, and your August bill is €18.90 above your average. Either of those, or something else?",
+}];
+
+class Component extends DCLogic {
+  state = { messages: WELCOME, busy: false, draft: '', docs: [], net: '3G · degraded since 14:20' };
+  timers = [];
+  seq = 0;
+
+  componentWillUnmount() { this.timers.forEach(clearTimeout); }
+
+  push(msg) {
+    this.seq += 1;
+    this.setState((s) => ({ messages: s.messages.concat([Object.assign({ id: 'm' + this.seq }, msg)]) }));
+  }
+
+  addDoc(code, title) {
+    this.setState((s) => (s.docs.some((d) => d.code === code) ? null : { docs: s.docs.concat([{ code, title }]) }));
+  }
+
+  // Reveal a scripted agent turn: user line first, then agent pieces with pauses.
+  run(userText, steps) {
+    this.timers.forEach(clearTimeout);
+    this.timers = [];
+    this.push({ label: 'You', isText: true, text: userText });
+    this.setState({ busy: true, draft: '' });
+    let t = 0;
+    steps.forEach((step, i) => {
+      t += i === 0 ? 900 : 750;
+      this.timers.push(setTimeout(() => {
+        this.push(step);
+        if (step.doc) this.addDoc(step.doc.code, step.doc.title);
+        if (i === steps.length - 1) this.setState({ busy: false });
+      }, t));
+    });
+  }
+
+  agent(text, cite, doc) { return { label: 'Assist', isText: true, text, cite, doc }; }
+
+  scenarios() {
+    const fixData = () => this.run('Do the re-provision.', [
+      { label: 'Assist', isDiag: true, rows: [
+        { k: 'Profile re-issued', v: '15:04' },
+        { k: 'Network', v: '4G re-attached' },
+        { k: 'Throughput', v: '48.2 Mbps ↑ from 1.1' },
+      ] },
+      { label: 'Assist', isPoster: true, text: "Fixed, and nobody had to call you back.", sub: "We'll watch this line for 48 hours and message you if it slips again." },
+    ]) || this.setState({ net: '4G · 48.2 Mbps' });
+
+    return {
+      data: () => this.run('My data is crawling today.', [
+        this.agent("I've read your line rather than asking you to reboot. Two things are wrong, and both are ours."),
+        { label: 'Assist', isDiag: true, rows: [
+          { k: 'SIM profile', v: 'Stale · 2024 setting' },
+          { k: 'Serving cell', v: 'Congested 262-02-7A31' },
+          { k: '4G Calling (VoLTE)', v: 'Disabled' },
+          { k: 'Data allowance', v: '41 of 50 GB — not the cause' },
+        ] },
+        this.agent("Your profile still carries a 2024 setting that keeps this handset off the 4G core, and 4G Calling is off, so every call drops you to 3G. Re-provisioning takes your line down for about 30 seconds.", 'Source · NET-076 “SIM profile re-provisioning”', { code: 'NET-076', title: 'SIM profile re-provisioning' }),
+        { label: 'Assist', isActions: true, items: [
+          { label: 'Re-provision now · 30 sec', onClick: fixData },
+          { label: 'Enable 4G Calling too', onClick: fixData },
+          { label: 'Explain what re-provisioning does', onClick: () => this.run('What does re-provisioning actually do?', [
+            this.agent("It re-issues the network settings your SIM downloads at attach — the same button an agent presses on the first call. Your number, contacts and eSIM stay exactly as they are; only the profile is rewritten.", 'Source · NET-076 §2', { code: 'NET-076', title: 'SIM profile re-provisioning' }),
+          ]) },
+        ] },
+      ]),
+
+      bill: () => this.run('Why is August €18.90 higher?', [
+        this.agent("Three lines account for all of it, and none of them is a mistake — but two are avoidable next month."),
+        { label: 'Assist', isDiag: true, rows: [
+          { k: 'Data used in Turkey · 3.1 GB, outside your EU zone', v: '€12.00' },
+          { k: 'Extra data pack, auto-added at 50 GB on 27 Aug', v: '€5.90' },
+          { k: 'Plan change to Unlimited Flex, pro-rated', v: '€1.00' },
+        ] },
+        this.agent("Turkey sits in Zone B, billed per gigabyte at €3.90 with no cap. A travel pack before you fly is €14 for 5 GB, and I can cap out-of-zone spend so an auto pack never appears again.", 'Source · BIL-114 “Out-of-zone data rates”, BIL-207 “Automatic data packs”', { code: 'BIL-114', title: 'Out-of-zone data rates' }),
+        { label: 'Assist', isActions: true, items: [
+          { label: 'Cap auto data packs at €0', onClick: () => this.run('Cap the auto packs.', [
+            { label: 'Assist', isPoster: true, text: 'Capped. No pack will be added without you.', sub: "You'll get a notification at 90% of your allowance instead." },
+          ]) },
+          { label: 'Sort out the next trip', onClick: () => this.scenarios().roam() },
+          { label: 'One charge is wrong — dispute it', onClick: () => this.handoffRun() },
+        ] },
+      ]),
+
+      roam: () => this.run('I fly to Istanbul on the 12th.', [
+        this.agent("Two of the four things you need are already in place, so this is a short list."),
+        { label: 'Assist', isDiag: true, rows: [
+          { k: 'Roaming permitted on your line', v: 'Ready' },
+          { k: '4G Calling abroad', v: 'Ready' },
+          { k: 'A data pack for Turkey', v: 'Needed' },
+          { k: 'Spend cap while abroad', v: 'Needed' },
+        ] },
+        this.agent("Without a pack it's €3.90 per gigabyte, uncapped — that is exactly what happened to you in August.", 'Source · ROA-052 “Zone B rates and packs”', { code: 'ROA-052', title: 'Zone B rates and packs' }),
+        { label: 'Assist', isActions: true, items: [
+          { label: 'Add Travel 5 GB · €14 and cap at €25', onClick: () => this.run('Add the pack and the cap.', [
+            { label: 'Assist', isPoster: true, text: 'Travel 5 GB added, cap set at €25.', sub: "It starts when you land. We'll text the local network settings on arrival." },
+          ]) },
+          { label: 'Remind me the day before I fly', onClick: () => this.run('Just remind me the day before.', [
+            this.agent("Set for 11 September, 09:00, with the pack one tap away in that message."),
+          ]) },
+        ] },
+      ]),
+
+      esim: () => this.run('My eSIM never activated.', [
+        this.agent("Profile NC-8842-QK was issued on 21 August and never installed. It can only install once, so the QR in that old email is dead — that is usually where this goes wrong."),
+        { label: 'Assist', isDiag: true, rows: [
+          { k: '01 · Order placed', v: 'Done' },
+          { k: '02 · Install the profile', v: 'You are here' },
+          { k: '03 · Number moves across', v: '2 min after' },
+        ] },
+        this.agent("Your old SIM keeps working until the swap completes, so there's no window where you're offline.", 'Source · SIM-031 “eSIM profile lifecycle”', { code: 'SIM-031', title: 'eSIM profile lifecycle' }),
+        { label: 'Assist', isActions: true, items: [
+          { label: 'Install on this device now', onClick: () => this.run('Install it here.', [
+            { label: 'Assist', isPoster: true, text: 'Profile installing. Stay on Wi-Fi for two minutes.', sub: 'A fresh profile was issued at 15:07 — the expired one is revoked.' },
+          ]) },
+          { label: 'Send a fresh QR to another phone', onClick: () => this.run('Send a new QR elsewhere.', [
+            this.agent("Sent to ada.vranje@fastmail.com, valid 24 hours. Scan it from the other handset's eSIM settings, not from the camera app."),
+          ]) },
+        ] },
+      ]),
+
+      voice: () => this.run('My calls keep cutting out.', [
+        this.agent("Three causes cover almost every dropped call, and I can tell which one is yours."),
+        { label: 'Assist', isDiag: true, rows: [
+          { k: 'Wi-Fi Calling on, weak home signal', v: 'Likely' },
+          { k: '4G Calling was off until 15:04', v: 'Contributing' },
+          { k: 'Cell rebuild at 262-02-7A31 until 4 Sep', v: 'Known works' },
+        ] },
+        this.agent("Calls dropping as you leave the house is the Wi-Fi-to-mobile handover. Turn Wi-Fi Calling off for a day; with 4G Calling now enabled you shouldn't need it here.", 'Source · VOI-018 “Dropped calls: three causes”', { code: 'VOI-018', title: 'Dropped calls: three causes' }),
+      ]),
+
+      account: () => this.run('I need my PUK and to change the plan.', [
+        this.agent("Both are yours to do — neither needs an agent's authorisation, which is why they no longer sit behind a phone call."),
+        this.agent("Your PUK is revealed in the app after a Face ID check; three wrong PIN attempts is what locked the SIM. And you're the account holder on this line, so plan changes take effect from the next cycle without approval.", 'Source · ACC-006 “PINs, PUKs and permissions”', { code: 'ACC-006', title: 'PINs, PUKs and permissions' }),
+      ]),
+    };
+  }
+
+  handoffRun() {
+    this.run('Get me a person.', [
+      this.agent("Queued for chat — typical reply two minutes. Your line diagnostic from 15:04, the two fixes tried and every document cited in this thread go across with you, so the agent opens on your case instead of your phone number."),
+      { label: 'Assist', isPoster: true, text: 'Handed over with the evidence attached.', sub: 'Nothing to repeat, nothing to re-prove.' },
+    ]);
+  }
+
+  renderVals() {
+    const sc = this.scenarios();
+    return {
+      messages: this.state.messages,
+      busy: this.state.busy,
+      draft: this.state.draft,
+      docs: this.state.docs,
+      hasDocs: this.state.docs.length > 0,
+      noDocs: this.state.docs.length === 0,
+      netState: this.state.net,
+      askData: sc.data, askBill: sc.bill, askRoam: sc.roam,
+      askEsim: sc.esim, askVoice: sc.voice, askAccount: sc.account,
+      handoff: () => this.handoffRun(),
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      onKey: (e) => { if (e.key === 'Enter') this.send(); },
+      send: () => this.send(),
+    };
+  }
+
+  send() {
+    const q = (this.state.draft || '').toLowerCase();
+    const sc = this.scenarios();
+    if (!q) return sc.data();
+    if (/bill|charge|€|expensive|cost/.test(q)) return sc.bill();
+    if (/roam|travel|abroad|istanbul|turkey|fly/.test(q)) return sc.roam();
+    if (/esim|sim|activat|puk/.test(q)) return sc.esim();
+    if (/call|voice|drop/.test(q)) return sc.voice();
+    if (/pin|account|app|plan|password/.test(q)) return sc.account();
+    return sc.data();
+  }
+}
+
+</script>
+</body>
+</html>

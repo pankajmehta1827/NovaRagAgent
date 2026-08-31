@@ -1,0 +1,85 @@
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+# Theme converted from the "Modernist" design system shipped with the NovaCell AI
+# Support Console canvas (_ds/modernist-.../styles.css). Archivo throughout at
+# weight 800 for headings, a warm off-white ground, one vermilion accent voice,
+# and zero corner radius — the system's defining move.
+#
+# The system is mono by design ("one accent voice"): status tags tint from the
+# neutral ramps rather than introducing green/blue/violet. So the semantic colours
+# below are mapped onto the ramps, with the accent reserved for what actually
+# needs attention. The canvas ships no dark variant, so [theme.dark] is derived
+# here from the same ramps rather than left to Streamlit's defaults.
+
+[theme]
+font = "Archivo:https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&display=swap"
+headingFont = "Archivo:https://fonts.googleapis.com/css2?family=Archivo:wght@800&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+
+baseFontSize = 15
+baseFontWeight = 400
+headingFontSizes = ["42px", "32px", "25px", "20px", "16px", "13px"]
+headingFontWeights = [800, 800, 800, 800, 800, 800]
+
+baseRadius = "none"
+buttonRadius = "none"
+linkUnderline = false
+showWidgetBorder = true
+
+[theme.light]
+primaryColor = "#ec3013"
+backgroundColor = "#f3f2f2"
+secondaryBackgroundColor = "#eae9e9"
+textColor = "#201e1d"
+borderColor = "#bab6b6"
+linkColor = "#ec3013"
+codeBackgroundColor = "#eae9e9"
+codeTextColor = "#7c1405"
+
+# One accent voice: vermilion means "look at this".
+redColor = "#ec3013"
+redBackgroundColor = "#ffe0d9"
+redTextColor = "#ae1800"
+orangeColor = "#c94b39"
+orangeBackgroundColor = "#ffe0da"
+orangeTextColor = "#9e3526"
+# Everything calm tints from the neutral ramp instead of a second hue.
+greenColor = "#605d5d"
+greenBackgroundColor = "#eae7e7"
+greenTextColor = "#444141"
+blueColor = "#605d5d"
+violetColor = "#7d7979"
+grayColor = "#7d7979"
+
+dataframeBorderColor = "#bab6b6"
+dataframeHeaderBackgroundColor = "#eae9e9"
+
+[theme.dark]
+primaryColor = "#ff563c"
+backgroundColor = "#201e1d"
+secondaryBackgroundColor = "#2d2b2b"
+textColor = "#f3f2f2"
+borderColor = "#605d5d"
+linkColor = "#ff9783"
+codeBackgroundColor = "#2d2b2b"
+codeTextColor = "#ffc4b8"
+
+redColor = "#ff563c"
+redBackgroundColor = "#4d170e"
+redTextColor = "#ffc4b8"
+orangeColor = "#ef6853"
+orangeBackgroundColor = "#471d16"
+orangeTextColor = "#ffc4b9"
+greenColor = "#bab6b6"
+greenBackgroundColor = "#444141"
+greenTextColor = "#eae7e7"
+blueColor = "#bab6b6"
+violetColor = "#9b9797"
+grayColor = "#9b9797"
+
+dataframeBorderColor = "#605d5d"
+dataframeHeaderBackgroundColor = "#2d2b2b"
