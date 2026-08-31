@@ -4,8 +4,8 @@
     {
       "name": "nova",
       "runtimeExecutable": ".venv/Scripts/streamlit.exe",
-      "runtimeArgs": ["run", "streamlit_app.py", "--server.port", "8501"],
-      "port": 8501
+      "runtimeArgs": ["run", "streamlit_app.py", "--server.port", "8502"],
+      "port": 8502
     }
   ]
 }

@@ -27,21 +27,31 @@ if "session_id" not in st.session_state:
     st.session_state.offer_escalation_for = None
     st.session_state.pending_prompt = None
 
-page = st.navigation(
-    [
-        st.Page("app_pages/chat.py", title="Chat", icon=":material/forum:", default=True),
-        st.Page("app_pages/ops_console.py", title="Support Ops", icon=":material/tune:"),
-    ],
-    position="top",
-)
+from nova import auth, ui  # noqa: E402  — after set_page_config, which must run first
+
+signed_in = auth.is_signed_in()
+
+# Sign-on comes before the console. Its nav is hidden so the only way forward is
+# the button on the page itself — no tab bar to click past the gate.
+if signed_in:
+    page = st.navigation(
+        [
+            st.Page("app_pages/chat.py", title="Chat", icon=":material/forum:", default=True),
+            st.Page("app_pages/ops_console.py", title="Support Ops", icon=":material/tune:"),
+        ],
+        position="top",
+    )
+else:
+    page = st.navigation(
+        [st.Page("app_pages/signon.py", title="Sign on", default=True)],
+        position="hidden",
+    )
 
 # --- console shell -----------------------------------------------------------
 # The canvas opens every artboard with an accent kicker over a heavy rule rather
 # than a logo bar, so the shell follows that: kicker, rule, page. It establishes
 # the product and gets out of the way — the customer's chat still opens with its
 # own question, not with a console.
-
-from nova import ui  # noqa: E402  — after set_page_config, which must run first
 
 ui.apply_design()
 
@@ -50,7 +60,18 @@ with shell:
     with st.container(width="stretch"):
         ui.kicker("NovaCell · Care · AI Support Console")
     with st.container(width="content"):
-        ui.kicker("v1", ink=True)
+        user = auth.current_user()
+        if user:
+            ui.kicker(user["email"] or user["name"], ink=True)
+        else:
+            ui.kicker("v1", ink=True)
+    if signed_in:
+        with st.container(width="content"):
+            st.button(
+                "Sign out",
+                icon=":material/logout:",
+                on_click=auth.sign_out,
+            )
 ui.rule()
 
 page.run()

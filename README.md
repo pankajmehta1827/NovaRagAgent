@@ -14,7 +14,7 @@ uv venv && uv pip install -r requirements.txt
 Copy `.env.example` to `.env` and add your `GROQ_API_KEY`, then:
 
 ```bash
-.venv/Scripts/streamlit run streamlit_app.py
+.venv/Scripts/streamlit run streamlit_app.py --server.port 8502
 ```
 
 The app is the **NovaCell AI Support Console**, with two surfaces under one shell:
@@ -27,6 +27,46 @@ it covers everything that doesn't need the API:
 ```bash
 .venv/Scripts/python selfcheck.py
 ```
+
+## Sign-on
+
+The console opens on a sign-on page (`app_pages/signon.py`) branded **Nova
+TeleAgent**. Two paths, and the page says which one is active:
+
+- **Google** — Streamlit's native OIDC (`st.login` / `st.user` / `st.logout`),
+  requiring `Authlib>=1.3.2` (in `requirements.txt`). `.streamlit/secrets.toml`
+  is scaffolded with a locally generated `cookie_secret` and placeholder client
+  credentials. To finish it:
+
+  1. **Consent screen first.** Google Cloud Console → Google Auth Platform →
+     Get started. *App name* is a product name — `Nova TeleAgent`, not a URL.
+     Pasting the redirect URI here fails with "An error occurred while creating
+     the OAuth configuration". Audience → **External** for a personal Gmail.
+  2. **Add yourself as a test user.** Audience → Test users → add the Google
+     account you will sign in with. An External app stays in Testing mode, and
+     without this sign-in fails with "Access blocked" even when everything else
+     is right.
+  3. **Then create the client.** Clients → Create client → **Web application**.
+     Only here does the redirect URI appear: add
+     `http://localhost:8502/oauth2callback` under *Authorised redirect URIs*.
+  4. Paste the client ID and secret over the placeholders in
+     `.streamlit/secrets.toml`, and restart.
+
+  If the port changes, the redirect URI must change in both places — Google
+  matches it exactly, including the port.
+
+  `google_configured()` requires every key to be present and non-placeholder, so
+  a half-filled file keeps the demo path rather than showing a Google button that
+  can only fail. Streamlit runs the whole OAuth exchange; no application code
+  sees a credential.
+- **Demo** — used when Google is not configured, so the app runs out of the box.
+  It is labelled as a demo on the page and grants access without verifying
+  anyone.
+
+**This gate is not an authorisation boundary.** Anyone who gets past it reaches
+the Support Ops console, which can edit knowledge and take the assistant offline.
+Before this is exposed to anyone but its authors it needs real role separation —
+the customer chat and the ops console should not sit behind one sign-in.
 
 ## Design
 
