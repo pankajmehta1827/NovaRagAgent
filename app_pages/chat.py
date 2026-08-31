@@ -7,7 +7,7 @@ from nova.ui import md
 
 # Line icons rather than Streamlit's filled default avatars: the design system's
 # icon foundation is Lucide — inline strokes on currentColor, not colour blobs.
-AVATARS = {"user": ":material/person:", "assistant": ":material/support_agent:"}
+AVATARS = {"user": ":material/person:", "assistant": ":material/smart_toy:"}
 
 settings = store.load_settings()
 

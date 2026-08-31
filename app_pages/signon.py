@@ -17,6 +17,7 @@ st.container(height=40, border=False)
 
 card = st.container(width=520, horizontal_alignment="center", border=True)
 with card:
+    ui.agent_mark()
     ui.kicker("NovaCell · Care")
     st.title("Nova TeleAgent", text_alignment="center")
     st.markdown(
@@ -27,11 +28,9 @@ with card:
     ui.rule()
 
     if auth.google_configured():
-        st.button(
+        ui.google_signin_button(
             "Continue with Google",
-            icon=":material/login:",
-            type="primary",
-            width="stretch",
+            key="google-signin",
             on_click=auth.sign_in_google,
         )
         st.caption(
