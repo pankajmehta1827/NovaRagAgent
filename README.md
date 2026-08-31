@@ -1,8 +1,9 @@
 # Nova — NovaCell AI support assistant
 
 Reference implementation of the v1 scope in [PRD.md](PRD.md): a grounded Tier-1
-support assistant that answers from NovaCell's three verified knowledge sources,
-refuses when it can't answer, and escalates cleanly to a human.
+support assistant that answers from NovaCell's four verified knowledge sources
+(plans catalog, FAQ, resolved tickets, and the technical guide), refuses when
+it can't answer, and escalates cleanly to a human.
 
 ## Run it
 
@@ -64,7 +65,7 @@ question
 
 | Module | Responsibility | PRD |
 |---|---|---|
-| `nova/ingest.py` | Load and chunk the three sources; produce the audit report | FR-2.1, FR-2.3, FR-2.9 |
+| `nova/ingest.py` | Load and chunk the four sources; produce the audit report | FR-2.1, FR-2.3, FR-2.9 |
 | `nova/sanitise.py` | PII scrubbing, internal-action redaction, guide classification gate | NFR-3.2, FR-3.4, FR-3.5, FR-3.3 |
 | `nova/retriever.py` | Hybrid lexical retrieval and absolute relevance scoring | FR-2.2, FR-2.4 |
 | `nova/guardrails.py` | Pre-retrieval routing: refuse / escalate / deflect | 3.3, FR-3.6, FR-3.8, FR-4.1 |
@@ -94,13 +95,16 @@ Run `selfcheck.py` to see it, but concretely:
   customer instructions they cannot perform. This is a finding about the corpus,
   not a bug: it is exactly the low-coverage risk flagged as R-4 in the PRD.
 - **Goodwill credits and repair ETAs never reach a customer** (FR-3.5).
+- **The plans catalog outranks every other source** (`SOURCE_TRUST["plans"] = 4`):
+  it's the single structured, versioned source of truth for prices and
+  allowances, so it wins any conflict with the FAQ, guide, or a ticket.
 
 ## Known gaps against the PRD
 
 Deliberate, and worth stating rather than papering over:
 
 - **Retrieval is lexical, not embedding-based.** The hybrid is BM25 plus character
-  n-grams, with the LLM query rewrite carrying the semantic load. On a 76-chunk
+  n-grams, with the LLM query rewrite carrying the semantic load. On a 90-chunk
   corpus this measurably works; at FAQ scale it should be replaced with a proper
   embedding index, which is what FR-2.2 assumes.
 - **No re-ranker model.** Fusion plus the trust tilt stands in for FR-2.4's

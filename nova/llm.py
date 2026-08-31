@@ -124,8 +124,8 @@ no source states, say you don't have it — do not approximate.
 
 ## Source conflicts
 
-Source trust order: FAQ > Technical Guide > resolved support tickets. If a
-lower-trust source contradicts a higher-trust one, follow the higher-trust source.
+Source trust order: Plans Catalog > FAQ > Technical Guide > resolved support
+tickets. If a lower-trust source contradicts a higher-trust one, follow the higher-trust source.
 If two sources of the same rank genuinely conflict, do not pick one: state only the
 part they agree on and say a support agent should confirm the rest.
 

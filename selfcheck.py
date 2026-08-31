@@ -36,7 +36,7 @@ print("\n== Index ==")
 print(f"  {report.counts}")
 
 print("\n== Ingestion (FR-2.1, FR-2.3) ==")
-check("all three sources indexed", all(report.counts.get(s, 0) > 0 for s in ("faq", "ticket", "guide")))
+check("all four sources indexed", all(report.counts.get(s, 0) > 0 for s in ("faq", "ticket", "guide", "plans")))
 check("FAQ pairs not split", all("\n" not in c.title for c in chunks if c.source == "faq"))
 
 print("\n== Resolved-tickets-only filter (FR-2.9) ==")
@@ -94,6 +94,7 @@ cases = [
     ("what is APN and how do I reset it", None),
     ("calls keep dropping", "faq-6"),
     ("how long does SIM activation take", "faq-12"),
+    ("how much is the Unlimited Plus plan", "plan-POST-UNLIMITED-PLUS"),
 ]
 for query, expected in cases:
     hits = retriever.search(query, top_k=settings["top_k"], max_per_source=settings["max_per_source"])
@@ -104,8 +105,16 @@ for query, expected in cases:
         check(f"retrieves something for {query!r}", bool(hits), ", ".join(ids[:4]))
     check(
         f"  source cap respected for {query!r}",
-        all(sum(1 for h in hits if h.chunk.source == s) <= settings["max_per_source"] for s in ("faq", "ticket", "guide")),
+        all(
+            sum(1 for h in hits if h.chunk.source == s) <= settings["max_per_source"]
+            for s in ("faq", "ticket", "guide", "plans")
+        ),
     )
+
+print("\n== Plans catalog (FR-2.1, FR-2.7) ==")
+plan = by_id.get("plan-POST-UNLIMITED-PLUS")
+check("plans trust ranks above FAQ", chunks and plan is not None and plan.trust > max(c.trust for c in chunks if c.source == "faq"))
+check("plan price reproduced verbatim", plan is not None and "USD 80.00" in plan.text, plan.text if plan else "")
 
 print("\n== Relevance floor (FR-3.2) ==")
 off_topic = retriever.search("what is the capital of France", top_k=6)

@@ -24,6 +24,7 @@ st.caption("Knowledge, quality and availability for the customer assistant.")
 status_row = st.container(horizontal=True, vertical_alignment="center")
 with status_row:
     st.metric("Indexed chunks", report.counts.get("total", 0), icon=":material/database:", border=True)
+    st.metric("Plans", report.counts.get("plans", 0), icon=":material/sell:", border=True)
     st.metric("FAQ", report.counts.get("faq", 0), icon=":material/quiz:", border=True)
     st.metric("Tickets", report.counts.get("ticket", 0), icon=":material/confirmation_number:", border=True)
     st.metric("Guide sections", report.counts.get("guide", 0), icon=":material/menu_book:", border=True)

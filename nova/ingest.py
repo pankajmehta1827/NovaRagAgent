@@ -1,6 +1,6 @@
-"""Knowledge ingestion for the three NovaCell sources.
+"""Knowledge ingestion for NovaCell's four sources.
 
-PRD references: FR-2.1 (all three sources), FR-2.3 (per-source chunking),
+PRD references: FR-2.1 (all sources), FR-2.3 (per-source chunking),
 FR-2.9 (resolved tickets only), FR-3.3 (guide content-classification gate),
 FR-3.4 / NFR-3.2 (ticket sanitisation), FR-5.1..5.3 (ops-editable content).
 
@@ -11,6 +11,7 @@ what was indexed, what was withheld, and why.
 from __future__ import annotations
 
 import csv
+import json
 import re
 import sqlite3
 from dataclasses import dataclass, field
@@ -41,7 +42,7 @@ class Chunk:
         which article is doing the deflection, so the entry id is part of it.
         """
         label = config.SOURCE_LABEL[self.source]
-        if self.source == "guide":
+        if self.source in ("guide", "plans"):
             return f"{label}, {self.title}"
         if self.source == "faq":
             return f"{label} {self.meta.get('faq_id', '?')} — {self.category or 'General'}"
@@ -301,6 +302,91 @@ def load_guide(report: IngestReport, settings: dict) -> list[Chunk]:
     return chunks
 
 
+# --- Source D: plans catalog --------------------------------------------------
+
+
+def _format_price(value: Any, currency: str) -> str:
+    if isinstance(value, (int, float)):
+        return f"{currency} {value:,.2f}"
+    return str(value)
+
+
+def _plan_body(plan: dict, currency: str) -> str:
+    """Reproduce every catalog figure verbatim (FR-2.5): this is the exact source
+    the answer prompt's verbatim-facts rule expects for prices and allowances.
+    """
+    lines: list[str] = []
+    if plan.get("monthly_price") is not None:
+        lines.append(f"Monthly price: {_format_price(plan['monthly_price'], currency)}")
+    if plan.get("price") is not None:
+        unit = plan.get("price_unit", "")
+        lines.append(f"Price: {_format_price(plan['price'], currency)}" + (f" ({unit})" if unit else ""))
+    if plan.get("price_per_line") is not None:
+        lines.append(f"Effective price per line: {_format_price(plan['price_per_line'], currency)}")
+    if plan.get("lines_included") is not None:
+        lines.append(f"Lines included: {plan['lines_included']}")
+    if plan.get("data_unlimited"):
+        lines.append("Data: unlimited")
+    elif plan.get("data_gb") is not None:
+        lines.append(f"Data: {plan['data_gb']} GB")
+    if plan.get("talk_minutes") is not None:
+        lines.append(f"Talk: {plan['talk_minutes']}")
+    if plan.get("texts") is not None:
+        lines.append(f"Text: {plan['texts']}")
+    if plan.get("hotspot_gb") is not None:
+        lines.append(f"Mobile hotspot: {plan['hotspot_gb']} GB")
+    if plan.get("network"):
+        lines.append(f"Network: {plan['network']}")
+    if plan.get("coverage"):
+        lines.append(f"Coverage: {plan['coverage']}")
+    if plan.get("contract"):
+        lines.append(f"Contract: {plan['contract']}")
+    if plan.get("eligibility"):
+        lines.append(f"Eligibility: {plan['eligibility']}")
+    if plan.get("intro_offer"):
+        lines.append(f"Intro offer: {plan['intro_offer']}")
+    for feature in plan.get("features") or []:
+        lines.append(f"- {feature}")
+    if plan.get("best_for"):
+        lines.append(f"Best for: {plan['best_for']}")
+    return "\n".join(lines)
+
+
+def load_plans() -> list[Chunk]:
+    """Plan/add-on catalog = one chunk per entry, never split (FR-2.3).
+
+    The single structured, ops-maintained source of truth for prices and
+    allowances (see ``last_updated`` in plans.json) — highest trust in the
+    hierarchy (FR-2.7).
+    """
+    chunks: list[Chunk] = []
+    if not config.PLANS_PATH.exists():
+        return chunks
+    try:
+        payload = json.loads(config.PLANS_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return chunks
+
+    currency = payload.get("currency", "USD")
+    for plan in payload.get("plans", []):
+        plan_id = (plan.get("id") or "").strip()
+        name = (plan.get("name") or "").strip()
+        if not plan_id or not name:
+            continue
+        chunks.append(
+            Chunk(
+                id=f"plan-{plan_id}",
+                source="plans",
+                title=name,
+                text=_plan_body(plan, currency),
+                category=plan.get("category", ""),
+                trust=config.SOURCE_TRUST["plans"],
+                meta={"plan_id": plan_id, "type": plan.get("type", "")},
+            )
+        )
+    return chunks
+
+
 # --- combined ----------------------------------------------------------------
 
 
@@ -309,10 +395,12 @@ def build_index(settings: dict, faq_overrides: dict[str, dict] | None = None) ->
     faq = load_faq(faq_overrides)
     tickets = load_tickets(report)
     guide = load_guide(report, settings)
+    plans = load_plans()
     report.counts = {
         "faq": len(faq),
         "ticket": len(tickets),
         "guide": len(guide),
-        "total": len(faq) + len(tickets) + len(guide),
+        "plans": len(plans),
+        "total": len(faq) + len(tickets) + len(guide) + len(plans),
     }
-    return faq + tickets + guide, report
+    return faq + tickets + guide + plans, report

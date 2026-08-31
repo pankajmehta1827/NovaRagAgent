@@ -17,6 +17,7 @@ RUNTIME_DIR = ROOT / "runtime"
 FAQ_PATH = DATA_DIR / "faq.csv"
 TICKETS_PATH = DATA_DIR / "tickets.db"
 GUIDE_PATH = DATA_DIR / "telecom_guide.pdf"
+PLANS_PATH = DATA_DIR / "plans.json"
 
 SETTINGS_PATH = RUNTIME_DIR / "settings.json"
 FAQ_OVERRIDES_PATH = RUNTIME_DIR / "faq_overrides.json"
@@ -48,9 +49,13 @@ PRICE_PER_MTOK = {
 }
 
 # --- source trust hierarchy (PRD FR-2.7) -------------------------------------
+# Plans sits above FAQ: it is the single structured, versioned catalog of prices
+# and allowances (see "last_updated" in plans.json), the exact figures the
+# verbatim-facts rule in the answer prompt cares most about getting right.
 
-SOURCE_TRUST = {"faq": 3, "guide": 2, "ticket": 1}
+SOURCE_TRUST = {"plans": 4, "faq": 3, "guide": 2, "ticket": 1}
 SOURCE_LABEL = {
+    "plans": "NovaCell Plans Catalog",
     "faq": "NovaCell FAQ",
     "guide": "Technical Guide v3.2",
     "ticket": "Resolved support ticket",
