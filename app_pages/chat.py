@@ -36,9 +36,13 @@ session_id = st.session_state.session_id
 # Agent PRD §6.2 — one refund conversation per session, over a ledger copied from
 # the hard-coded seed. Per-session rather than module-level so a demonstration can
 # be run twice, and so one browser's refund never mutates another's account.
-if "refund_flow" not in st.session_state:
-    st.session_state.refund_flow = refund.RefundFlow(refund.new_ledger())
-flow = st.session_state.refund_flow
+# isinstance rather than a presence check: session state also outlives a code
+# reload, so a flow built from the previous nova.refund would otherwise survive
+# into the new page and fail the same way the cached agent does.
+flow = st.session_state.get("refund_flow")
+if not isinstance(flow, refund.RefundFlow):
+    flow = refund.RefundFlow(refund.new_ledger())
+    st.session_state.refund_flow = flow
 
 
 # --- helpers -----------------------------------------------------------------

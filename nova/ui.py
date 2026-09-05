@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import inspect
 import json
 import os
 import re
@@ -48,6 +49,25 @@ def _build_agent(signature: str, api_key: str) -> NovaAgent:
     return NovaAgent(client, settings, overrides)
 
 
+def _agent_is_current(agent: object) -> bool:
+    """Is this cached agent built from the code that is running now?
+
+    ``st.cache_resource`` is keyed on the settings signature and the API key,
+    neither of which changes when the source does — and the cache outlives a
+    script rerun. So a deploy that reloads the page scripts without restarting
+    the process leaves an agent built from the *previous* ``NovaAgent`` class
+    wired to the current page, and the first call with a newly added argument
+    dies with a TypeError far from the cause. Checking the live signature turns
+    that into a rebuild.
+    """
+    if not isinstance(agent, NovaAgent):
+        return False
+    try:
+        return "flow" in inspect.signature(agent.begin_turn).parameters
+    except (TypeError, ValueError):
+        return False
+
+
 def get_agent() -> tuple[NovaAgent | None, dict, str | None]:
     """Return ``(agent, settings, error)``. Never raises into the page."""
     settings = store.load_settings()
@@ -58,8 +78,19 @@ def get_agent() -> tuple[NovaAgent | None, dict, str | None]:
             "GROQ_API_KEY is not set. Copy `.env.example` to `.env` and add your key, "
             "then reload this page."
         )
+    signature = settings_signature(settings, overrides)
     try:
-        agent = _build_agent(settings_signature(settings, overrides), api_key)
+        agent = _build_agent(signature, api_key)
+        if not _agent_is_current(agent):
+            rebuild_index()
+            agent = _build_agent(signature, api_key)
+            if not _agent_is_current(agent):
+                # The cache was cleared but the module itself is still the old
+                # one, so rebuilding cannot help. Only a restart will.
+                return None, settings, (
+                    "The assistant was updated while this app was running. "
+                    "Reboot the app to load the new version."
+                )
     except Exception as error:
         return None, settings, f"Could not start the assistant: {error}"
     return agent, settings, None
