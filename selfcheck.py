@@ -13,6 +13,11 @@ from __future__ import annotations
 
 import sys
 
+# The refund checks print ₹ and ≤, and Windows consoles still default to cp1252.
+# Without this the suite dies on an encoding error rather than on a real failure.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 from nova import guardrails, store
 from nova.ingest import build_index
 from nova.retriever import HybridRetriever, normalised_top_score
@@ -158,6 +163,134 @@ check("email removed", "@example.com" not in scrubbed)
 check("phone removed", "900123" not in scrubbed)
 check("published short codes preserved", "*123#" in scrub_pii("Dial *123# to check your balance."))
 check("care line preserved", "611" in scrub_pii("Call 611 for help."))
+
+
+# --- Agent PRD: refund capability -------------------------------------------
+
+from nova import intent, refund  # noqa: E402
+
+print("\n== Intent routing (Agent FR-01, FR-05a) ==")
+# The deterministic fallback is what runs when the classifier is unreachable, so
+# it is the part that must hold up without an API key.
+intent_cases = [
+    ("I want a refund of 999", intent.REFUND_REQUEST),
+    ("Give me my money back", intent.REFUND_REQUEST),
+    ("Please cancel my recharge from yesterday", intent.REFUND_REQUEST),
+    ("How do I request a refund?", intent.REQUIREMENT_INQUIRY),
+    ("What is your refund policy?", intent.REQUIREMENT_INQUIRY),
+    ("How do I cancel a recharge?", intent.REQUIREMENT_INQUIRY),
+    ("Why is my mobile internet slow?", intent.REQUIREMENT_INQUIRY),
+    ("Should I do that before I travel?", intent.REQUIREMENT_INQUIRY),
+]
+for message, expected in intent_cases:
+    got = intent._fallback(message)
+    check(f"{message!r} -> {expected}", got == expected, f"got {got}")
+
+print("\n== Refund guardrail split (Agent FR-03) ==")
+refund_ask = guardrails.check("I want a refund of 499", [], settings)
+check("a plain refund request no longer hard-escalates", refund_ask.action == guardrails.ALLOW, refund_ask.action)
+dispute = guardrails.check("I want a refund for the double charge", [], settings)
+check("a disputed charge still escalates to a human", dispute.reason_code == "BILLING_DISPUTE", dispute.reason_code)
+chargeback = guardrails.check("I am going to raise a chargeback", [], settings)
+check("chargeback still escalates", chargeback.reason_code == "BILLING_DISPUTE", chargeback.reason_code)
+
+print("\n== Amount extraction (Agent FR-44) ==")
+check("reads a rupee amount", refund.extract_amount("I want a refund of ₹999") == 999)
+check("reads a bare amount", refund.extract_amount("refund 499 please") == 499)
+check("reads a grouped amount", refund.extract_amount("Give me a refund of ₹2,000") == 2000)
+check("invents nothing when none is given", refund.extract_amount("I want a refund") is None)
+
+print("\n== Confirmation parsing (Agent FR-36c, FR-36e) ==")
+check("explicit yes confirms", refund.read_confirmation("Yes, proceed") == "yes")
+check("explicit no cancels", refund.read_confirmation("no thanks") == "no")
+for ambiguous in ("maybe", "what does that mean?", "I think so", "499"):
+    check(f"{ambiguous!r} is ambiguous", refund.read_confirmation(ambiguous) == "ambiguous")
+
+print("\n== Scenario 1 - successful refund (≤ limit) ==")
+flow = refund.RefundFlow(refund.new_ledger())
+reply, needs_confirm = flow.handle("I want a refund of 499")
+check("asks for confirmation", flow.state == refund.AWAITING_CONFIRMATION, flow.state)
+check("surfaces the confirmation UI", needs_confirm)
+check("names the amount", "499" in reply)
+reply, _ = flow.confirm()
+check("refund processed", flow.state == refund.PROCESSED, flow.state)
+check("returns a refund reference", "ref_" in reply, reply)
+account = refund.get_user_account(flow.ledger, refund.SESSION_USER_ID)
+by_id = {r["recharge_id"]: r for r in account["recharges"]}
+check("the 499 recharge is now refunded", by_id["rch_457"]["refund_status"] == "refunded")
+check("the 999 recharge is untouched", by_id["rch_456"]["refund_status"] == "not_refunded")
+
+print("\n== Scenario 2 - amount exceeds recharge ==")
+flow = refund.RefundFlow(refund.new_ledger())
+reply, _ = flow.handle("Give me a refund of ₹2,000")
+check("rejected", flow.state == refund.REJECTED, flow.state)
+check("reason names the excess", "exceeds" in reply.lower(), reply)
+
+print("\n== Scenario 3 - recharge too old ==")
+ledger = refund.new_ledger()
+ledger["user_123"]["recharges"][1]["recharge_age_days"] = 15
+result = refund.validate_refund(ledger, "user_123", 499)
+check("not eligible", not result["eligible"])
+check("reason names the window", "window" in result["reason"].lower(), result["reason"])
+
+print("\n== Scenario 4 - already refunded ==")
+ledger = refund.new_ledger()
+ledger["user_123"]["recharges"][1]["refund_status"] = "refunded"
+result = refund.validate_refund(ledger, "user_123", 499)
+check("not eligible", not result["eligible"])
+check("reason names the prior refund", "already been refunded" in result["reason"], result["reason"])
+check("exact match still identifies the refunded recharge", result.get("recharge_id") == "rch_457")
+
+print("\n== Scenario 6 - above the approval limit ==")
+flow = refund.RefundFlow(refund.new_ledger())
+reply, needs_confirm = flow.handle("I want a refund of 999")
+check("submitted for review", flow.state == refund.SUBMITTED, flow.state)
+check("no confirmation step is offered", not needs_confirm)
+check("says it was submitted to the Support Team", "Support Team" in reply, reply)
+for forbidden in ("approved", "rejected", "processed by"):
+    check(f"never claims the review outcome ({forbidden!r})", forbidden not in reply.lower())
+account = refund.get_user_account(flow.ledger, refund.SESSION_USER_ID)
+check(
+    "refund_status unchanged",
+    all(r["refund_status"] == "not_refunded" for r in account["recharges"]),
+)
+
+print("\n== Missing amount (Agent FR-42a, FR-44) ==")
+flow = refund.RefundFlow(refund.new_ledger())
+reply, _ = flow.handle("I want a refund")
+check("asks which amount", flow.state == refund.AWAITING_AMOUNT, flow.state)
+check("offers both recharges", "999" in reply and "499" in reply, reply)
+reply, needs_confirm = flow.handle("the 499 one")
+check("picks up the answer", flow.state == refund.AWAITING_CONFIRMATION, flow.state)
+
+print("\n== Confirmation guardrails (Agent GR-01, GR-02, FR-36d, FR-36e) ==")
+flow = refund.RefundFlow(refund.new_ledger())
+flow.handle("I want a refund of 499")
+reply, still_pending = flow.handle("hmm, maybe")
+check("ambiguity does not execute", flow.state == refund.AWAITING_CONFIRMATION, flow.state)
+check("asks again", still_pending)
+flow.handle("no")
+check("declining cancels", flow.state == refund.CANCELLED, flow.state)
+account = refund.get_user_account(flow.ledger, refund.SESSION_USER_ID)
+check("nothing was refunded", all(r["refund_status"] == "not_refunded" for r in account["recharges"]))
+
+cold = refund.RefundFlow(refund.new_ledger())
+reply, _ = cold.confirm()
+check("confirm without a validated refund does nothing", cold.state != refund.PROCESSED, cold.state)
+check(
+    "and refunds nothing",
+    all(r["refund_status"] == "not_refunded" for r in cold.ledger["user_123"]["recharges"]),
+)
+
+print("\n== Ledger isolation (Agent §11) ==")
+one = refund.RefundFlow(refund.new_ledger())
+one.handle("refund 499")
+one.confirm()
+two = refund.RefundFlow(refund.new_ledger())
+check(
+    "a fresh flow starts from an unrefunded ledger",
+    all(r["refund_status"] == "not_refunded" for r in two.ledger["user_123"]["recharges"]),
+)
 
 print()
 if failures:

@@ -61,7 +61,14 @@ _HUMAN_REQUEST = re.compile(
 _HARD_ROUTES: list[tuple[str, re.Pattern[str]]] = [
     ("LOST_OR_STOLEN_SIM", re.compile(r"\b(lost|stolen|misplaced)\b.{0,25}\b(sim|phone|handset|device)\b|\bmy (phone|sim) (was|got) (stolen|taken)\b", re.I)),
     ("FRAUD_OR_UNAUTHORISED", re.compile(r"\b(fraud|scam|unauthoris|unauthoriz|someone (else )?(changed|accessed|used)|identity theft|sim swap|hacked|didn'?t authorise|did not authorise)\b", re.I)),
-    ("BILLING_DISPUTE", re.compile(r"\b(refund|reimburse|dispute|charge ?back|double ?charged|wrongly charged|overcharged|want my money back|credit my account)\b", re.I)),
+    # A *disputed* charge is still a human matter and outranks the refund agent:
+    # someone challenging a charge they believe is wrong needs a person, not a
+    # self-service reversal. A plain request to reverse a recharge the customer
+    # made deliberately is no longer caught here — Agent PRD FR-03 routes that to
+    # the Refund Agent, which can only act inside the deterministic rules in
+    # nova/refund.py. Keep the two apart carefully: dropping "dispute" or
+    # "chargeback" from this line would hand a billing complaint to a bot.
+    ("BILLING_DISPUTE", re.compile(r"\b(reimburse|dispute|charge ?back|double ?charged?|wrongly charged|overcharged|credit my account)\b", re.I)),
     ("CANCELLATION", re.compile(r"\b(cancel my (plan|account|contract|service)|terminate my (plan|account|contract)|leave novacell|switch to another (network|carrier)|port out|close my account)\b", re.I)),
     ("COMPLAINT", re.compile(r"\b(complaint|formal complaint|escalate this|ombudsman|regulator|legal action|sue you|take this further)\b", re.I)),
     ("OUTAGE_REPORT", re.compile(r"\b(report (an|the) outage|whole (street|building|area) (is )?(down|out)|everyone (here|in my area) has no|network is down in)\b", re.I)),

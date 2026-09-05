@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from nova import escalation, store, ui
+from nova import escalation, refund, store, ui
 from nova.ui import md
 
 # Line icons rather than Streamlit's filled default avatars: the design system's
@@ -32,6 +32,13 @@ if error:
     st.stop()
 
 session_id = st.session_state.session_id
+
+# Agent PRD §6.2 — one refund conversation per session, over a ledger copied from
+# the hard-coded seed. Per-session rather than module-level so a demonstration can
+# be run twice, and so one browser's refund never mutates another's account.
+if "refund_flow" not in st.session_state:
+    st.session_state.refund_flow = refund.RefundFlow(refund.new_ledger())
+flow = st.session_state.refund_flow
 
 
 # --- helpers -----------------------------------------------------------------
@@ -94,6 +101,11 @@ def render_assistant_extras(message: dict) -> None:
     elif status in {"NO_VERIFIED_ANSWER", "ERROR"}:
         st.badge("No verified answer", icon=":material/help_outline:", color="orange")
 
+    if message.get("refund_steps"):
+        # §12 — the workflow steps, not the model's reasoning.
+        with st.expander("Refund workflow", icon=":material/account_tree:"):
+            st.code("\n".join(message["refund_steps"]), language="text")
+
     if message.get("deflection"):
         st.info(message["deflection"], icon=":material/account_circle:")
     if message.get("hits") is not None and message.get("sink") is not None:
@@ -109,6 +121,52 @@ def render_assistant_extras(message: dict) -> None:
             on_change=record_feedback,
             args=(turn_id, widget_key),
         )
+
+
+def _record_refund(user_text: str, reply: str, steps: list[str]) -> None:
+    """Append a button-driven refund exchange as if it had been typed."""
+    st.session_state.messages.append({"role": "user", "content": user_text})
+    st.session_state.messages.append(
+        {"role": "assistant", "content": reply, "status": "REFUND", "refund_steps": steps}
+    )
+    st.session_state.history.append({"role": "user", "content": user_text})
+    st.session_state.history.append({"role": "assistant", "content": reply})
+    store.log_turn(
+        {
+            "turn_id": f"refund-{len(st.session_state.messages)}",
+            "session_id": session_id,
+            "question": user_text,
+            "status": "REFUND",
+            "intent": "refund_request",
+            "refund_state": flow.state,
+            "refund_steps": steps,
+            "escalated": False,
+        }
+    )
+
+
+def confirm_refund() -> None:
+    """FR-32 — the only path to execution, and only from the confirmation state."""
+    before = len(flow.log)
+    reply, _ = flow.confirm()
+    _record_refund("Yes, proceed.", reply, flow.log[before:])
+
+
+def cancel_refund() -> None:
+    """FR-36d — declining executes nothing."""
+    before = len(flow.log)
+    reply, _ = flow.cancel()
+    _record_refund("No, cancel it.", reply, flow.log[before:])
+
+
+def clear_conversation() -> None:
+    """FR-48 / §11 — reset the transcript and any refund waiting on the customer."""
+    st.session_state.messages = []
+    st.session_state.history = []
+    st.session_state.consecutive_ungrounded = 0
+    st.session_state.handoff = None
+    st.session_state.offer_escalation_for = None
+    st.session_state.refund_flow = refund.RefundFlow(refund.new_ledger())
 
 
 def use_sample(question: str) -> None:
@@ -162,6 +220,14 @@ BOUNDARY_QUESTIONS = [
 ]
 
 with st.sidebar:
+    st.button(
+        "Clear conversation",
+        icon=":material/restart_alt:",
+        width="stretch",
+        on_click=clear_conversation,
+        help="Resets the transcript, any refund waiting on you, and the demo ledger.",
+    )
+
     ui.kicker("Sample questions")
     st.caption("Tap one to ask it.")
     for topic, questions in SAMPLE_QUESTIONS.items():
@@ -245,6 +311,27 @@ if not st.session_state.messages:
                 args=(question,),
             )
 
+# --- refund confirmation (Agent PRD §11, FR-36) ------------------------------
+# Rendered from the flow's own state rather than from the last turn, so the
+# buttons survive a rerun and stay in step with what the agent is actually
+# waiting for. Typing "yes" or "no" works too — this is the same gate either way.
+
+if flow.state == refund.AWAITING_CONFIRMATION:
+    with st.container(border=True):
+        st.markdown(
+            md(f"**Refund eligible: {refund.CURRENCY}{flow.amount}** — recharge {flow.recharge_id}")
+        )
+        st.caption("Nothing is refunded until you confirm.")
+        buttons = st.container(horizontal=True)
+        with buttons:
+            st.button(
+                "Confirm refund",
+                icon=":material/check:",
+                type="primary",
+                on_click=confirm_refund,
+            )
+            st.button("Cancel", icon=":material/close:", on_click=cancel_refund)
+
 # --- escalation offer from a thumbs-down (FR-6.1) ----------------------------
 
 if st.session_state.get("offer_escalation_for") and st.session_state.handoff is None:
@@ -271,7 +358,7 @@ if prompt:
     history = list(st.session_state.history)
 
     with st.chat_message("assistant", avatar=AVATARS["assistant"]):
-        turn = agent.begin_turn(prompt, history)
+        turn = agent.begin_turn(prompt, history, flow)
 
         if turn.escalated:
             handoff = agent.escalate(turn, history + [{"role": "user", "content": prompt}], session_id)
@@ -310,6 +397,8 @@ if prompt:
                 record["sink"] = turn.sink
             record["turn_id"] = turn.turn_id
             record["status"] = turn.sink.get("status")
+            if turn.refund_log:
+                record["refund_steps"] = turn.refund_log
 
         st.session_state.consecutive_ungrounded = (
             st.session_state.consecutive_ungrounded + 1 if turn.escalation_offer else 0

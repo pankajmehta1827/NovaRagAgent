@@ -16,7 +16,7 @@ from typing import Any
 
 from groq import Groq
 
-from . import escalation, guardrails, llm, store
+from . import escalation, guardrails, intent as intent_router, llm, refund, store
 from .ingest import IngestReport, build_index
 from .retriever import HybridRetriever, normalised_top_score
 
@@ -41,6 +41,11 @@ class Turn:
     deflection_note: str = ""
     started_at: float = field(default_factory=time.perf_counter)
     latency_ms: int = 0
+    # Agent PRD §6.1 / §6.2 — which route the message took, and what the refund
+    # agent produced if it took that one.
+    intent: str = ""
+    needs_confirmation: bool = False
+    refund_log: list[str] = field(default_factory=list)
 
 
 class NovaAgent:
@@ -52,7 +57,7 @@ class NovaAgent:
 
     # --- step 1: decide what kind of turn this is ---------------------------
 
-    def begin_turn(self, question: str, history: list[dict]) -> Turn:
+    def begin_turn(self, question: str, history: list[dict], flow: refund.RefundFlow | None = None) -> Turn:
         turn = Turn(turn_id=uuid.uuid4().hex[:12], question=question, mode="fixed")
         check = guardrails.check(question, history, self.settings)
         turn.precheck = check
@@ -67,6 +72,16 @@ class NovaAgent:
             turn.sink["status"] = "ESCALATED"
             turn.fixed_text = ""  # filled by the caller once the handoff is built
             return turn
+
+        # Agent PRD §6.1 — intent routing sits between the guardrails and the RAG
+        # pipeline. Guardrails stay in front of it deliberately: asking for a human
+        # or disclosing a card number must win over any refund in progress.
+        if flow is not None:
+            resumed = self._resume_or_classify(turn, question, history, flow)
+            if resumed is not None:
+                return resumed
+
+        turn.intent = turn.intent or intent_router.REQUIREMENT_INQUIRY
 
         # Retrieval path. The cheap model bridges symptom language to domain terms.
         expanded, usage = llm.expand_query(self.client, question, history)
@@ -97,6 +112,35 @@ class NovaAgent:
         turn.mode = "stream"
         return turn
 
+    def _resume_or_classify(
+        self, turn: Turn, question: str, history: list[dict], flow: refund.RefundFlow
+    ) -> Turn | None:
+        """Refund route, or None to fall through to the existing RAG pipeline.
+
+        A refund already awaiting an amount or a confirmation owns the next message
+        outright — "yes" classified in isolation is an inquiry, and re-classifying
+        it would drop the answer to the question the agent just asked.
+        """
+        pending = flow.state in {refund.AWAITING_AMOUNT, refund.AWAITING_CONFIRMATION}
+
+        if pending:
+            turn.intent = intent_router.REFUND_REQUEST
+        else:
+            detected, usage = intent_router.classify(self.client, question, history)
+            if usage:
+                turn.usage.append(usage)
+            turn.intent = detected
+            if detected != intent_router.REFUND_REQUEST:
+                return None
+
+        reply, needs_confirmation = flow.handle(question)
+        turn.fixed_text = reply
+        turn.needs_confirmation = needs_confirmation
+        turn.refund_log = list(flow.log)
+        turn.sink["status"] = "REFUND"
+        turn.sink["refund_state"] = flow.state
+        return turn
+
     # --- step 2: stream the grounded answer --------------------------------
 
     def stream(self, turn: Turn, history: list[dict]) -> Iterator[str]:
@@ -120,8 +164,11 @@ class NovaAgent:
 
         status = turn.sink.get("status", "ANSWERED" if turn.fixed_text else "NO_VERIFIED_ANSWER")
 
-        # Guardrails already decided these turns; the confidence gate does not apply.
-        if status in {"REFUSED", "ESCALATED"}:
+        # Guardrails and the refund agent already decided these turns; the
+        # confidence gate is about grounded answers and does not apply. A refund
+        # reply that reached the customer is a completed action, not an
+        # ungrounded answer, so it must never trigger an escalation offer.
+        if status in {"REFUSED", "ESCALATED", "REFUND"}:
             return turn
 
         turn.confidence = self._confidence(turn, status)
@@ -217,6 +264,8 @@ class NovaAgent:
                 "retrieved": [hit.chunk.id for hit in turn.hits],
                 "cited": turn.sink.get("cited", []),
                 "top_source": turn.hits[0].chunk.source if turn.hits else "",
+                "intent": turn.intent,
+                "refund_state": turn.sink.get("refund_state", ""),
                 "escalated": turn.escalated,
                 "reason_code": turn.precheck.reason_code,
                 "latency_ms": turn.latency_ms,

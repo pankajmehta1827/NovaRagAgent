@@ -85,6 +85,47 @@ Two consequences worth knowing:
 - **The canvas ships no dark variant.** `[theme.dark]` is derived here from the
   same ramps rather than left to Streamlit's defaults.
 
+## Refund agent
+
+A second route sits beside the RAG pipeline, specified by `agent_PRD.md`: an
+intent classifier splits `requirement_inquiry` from `refund_request`, and refund
+requests go to a tool-using agent over hard-coded account data
+(`nova/refund.py`). Nothing about it is real — no CRM, no billing, no payment.
+
+The structural point is how little of it the model decides. Eligibility, the
+₹499 approval limit, which recharge an amount refers to, and what counts as a
+confirmation are all deterministic application code. The LLM classifies the
+intent and nothing else; `process_refund` and `submit_to_support` are never
+exposed to it as callable tools (FR-23a, FR-30, GR-05).
+
+```
+refund_request
+  ├─ get_user_account ─────────── hard-coded ledger, session-scoped copy
+  ├─ determine amount ─────────── read from the message, or ask; never invented
+  ├─ validate_refund ──────────── completed · within 7 days · ≤ recharge · not already refunded
+  └─ approval limit
+       ├─ ≤ ₹499 → confirmation → process_refund → simulated reference
+       └─ > ₹499 → submit_to_support, and say only that it was submitted
+```
+
+Two things worth knowing before reading the code:
+
+- **The existing `BILLING_DISPUTE` guardrail used to swallow every refund.** It
+  matched a bare "refund" and hard-routed to a human, so refund requests never
+  reached the pipeline at all. It now matches disputes only — chargeback,
+  double-charged, wrongly charged — which still escalate and still outrank the
+  agent. A challenged charge needs a person; a deliberate reversal does not.
+- **Guardrails stay in front of intent detection.** Asking for a human or
+  disclosing a card number mid-refund wins over the refund in progress.
+
+The ledger is copied per session, so a demonstration can be run more than once
+and one browser's refund never mutates another's account. "Clear conversation"
+reseeds it along with the transcript and any pending refund.
+
+Currency: the agent PRD specifies ₹499 / ₹999 while the rest of the knowledge
+base quotes USD. The refund ledger is self-contained demo data, so it uses the
+PRD's rupee figures as written rather than silently converting them.
+
 ## How a turn works
 
 ```
@@ -92,6 +133,7 @@ question
   ├─ guardrails.check ─────────── refuse (emergency, credentials)
   │                               escalate (human request, fraud, dispute, …)
   │                               deflect (account-specific → bounded deflection)
+  ├─ intent.classify ──────────── requirement_inquiry → below; refund_request → agent
   ├─ llm.expand_query ─────────── gpt-oss-20b bridges symptom language
   ├─ retriever.search ─────────── BM25 + char-4-gram, RRF fused, per-source capped
   │      └─ below relevance floor → refuse without calling the answer model
@@ -110,7 +152,9 @@ question
 | `nova/retriever.py` | Hybrid lexical retrieval and absolute relevance scoring | FR-2.2, FR-2.4 |
 | `nova/guardrails.py` | Pre-retrieval routing: refuse / escalate / deflect | 3.3, FR-3.6, FR-3.8, FR-4.1 |
 | `nova/llm.py` | Query expansion and grounded answer generation | FR-2.5, FR-3.7, NFR-4.2 |
-| `nova/conversation.py` | Turn orchestration and the confidence gate | FR-3.1, FR-3.2, FR-4.1 |
+| `nova/conversation.py` | Turn orchestration, intent routing, confidence gate | FR-3.1, FR-3.2, FR-4.1 · Agent FR-01 |
+| `nova/intent.py` | Two-intent classifier with a deterministic fallback | Agent FR-01, FR-04, FR-05a |
+| `nova/refund.py` | Simulated ledger, refund tools, deterministic validation, workflow state | Agent §6.3–§6.8, §10 |
 | `nova/escalation.py` | Handoff payload and hours-aware routing | FR-4.3, FR-4.4 |
 | `nova/store.py` | Settings, FAQ overrides, turn logs, metrics, unanswered queue | FR-5.x, FR-6.2, FR-6.3 |
 | `app_pages/chat.py` | Customer surface | §4.1, §4.6 |
