@@ -6,4 +6,6 @@ runtime/
 .streamlit/secrets.toml
 
 # day-trader skill working data (portfolio, orders, state)
-trader/
+trader/*.json
+trader/*.txt
+trader/state/
