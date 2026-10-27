@@ -4,13 +4,3 @@ __pycache__/
 .env
 runtime/
 .streamlit/secrets.toml
-
-# day-trader skill working data (portfolio, orders, state)
-trader/*.json
-trader/*.txt
-trader/state/
-
-# NSE scanner web app build output
-scanner/frontend/node_modules/
-scanner/frontend/dist/
-scanner/backend/.venv/
