@@ -4,3 +4,8 @@ __pycache__/
 .env
 runtime/
 .streamlit/secrets.toml
+
+# day-trader skill working data (portfolio, orders, state)
+trader/*.json
+trader/*.txt
+trader/state/
