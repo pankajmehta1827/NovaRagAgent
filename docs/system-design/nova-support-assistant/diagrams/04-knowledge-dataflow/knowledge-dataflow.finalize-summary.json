@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "dataflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/04-knowledge-dataflow/candidate.json",
+    "sha256": "57b4325da1ed5850b57629f0617b80f501d1b81346d22232360035229707593f",
+    "bytes": 7282
+  },
+  "artifact": {
+    "path": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/04-knowledge-dataflow/knowledge-dataflow.html",
+    "sha256": "25da75f13c4009ac4e2bcd5db16d1426aed84b93cccd269eae9479b4f207ff6c",
+    "bytes": 765601
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/04-knowledge-dataflow/knowledge-dataflow.finalize.json",
+    "summaryReceipt": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/04-knowledge-dataflow/knowledge-dataflow.finalize-summary.json",
+    "browserCheckReceipt": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/04-knowledge-dataflow/knowledge-dataflow.browser-check.json"
+  },
+  "update": {
+    "status": "unavailable",
+    "installedVersion": null,
+    "availableVersion": null,
+    "releaseNotes": null,
+    "checkedAt": null,
+    "source": null,
+    "noticeRequired": false,
+    "noticeText": null,
+    "reason": "cache-valid"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3463
+}

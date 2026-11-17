@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Grounded Answer Turn — Call Sequence",
+    "output": "docs/system-design/nova-support-assistant/diagrams/02-turn-sequence/turn-sequence.html",
+    "viewBox": [
+      1080,
+      692
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/pankajmehta1827/NovaRagAgent",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "218666e53b81aa896b03b382685f2f76b71f8fc3"
+    }
+  },
+  "participants": [
+    {
+      "id": "customer",
+      "type": "external",
+      "label": "Customer",
+      "sublabel": "browser"
+    },
+    {
+      "id": "chat",
+      "type": "frontend",
+      "label": "Chat page",
+      "sublabel": "app_pages/chat.py",
+      "sources": [
+        {
+          "path": "app_pages/chat.py",
+          "line": 350,
+          "end_line": 428
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "NovaAgent",
+      "sublabel": "conversation.py",
+      "sources": [
+        {
+          "path": "nova/conversation.py",
+          "line": 60,
+          "end_line": 113
+        },
+        {
+          "path": "nova/conversation.py",
+          "line": 159,
+          "end_line": 224
+        }
+      ]
+    },
+    {
+      "id": "guard",
+      "type": "security",
+      "label": "Guardrails",
+      "sublabel": "regex pre-check",
+      "sources": [
+        {
+          "path": "nova/guardrails.py",
+          "line": 130,
+          "end_line": 162
+        }
+      ]
+    },
+    {
+      "id": "groq",
+      "type": "cloud",
+      "label": "Groq API",
+      "sublabel": "20b utility · 120b answer",
+      "sources": [
+        {
+          "path": "nova/intent.py",
+          "line": 71,
+          "end_line": 104
+        },
+        {
+          "path": "nova/llm.py",
+          "line": 69,
+          "end_line": 100
+        },
+        {
+          "path": "nova/llm.py",
+          "line": 230,
+          "end_line": 331
+        }
+      ]
+    },
+    {
+      "id": "retriever",
+      "type": "backend",
+      "label": "Retriever",
+      "sublabel": "hybrid, in-process",
+      "sources": [
+        {
+          "path": "nova/retriever.py",
+          "line": 148,
+          "end_line": 200
+        }
+      ]
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "runtime/",
+      "sublabel": "turns.jsonl",
+      "sources": [
+        {
+          "path": "nova/store.py",
+          "line": 97,
+          "end_line": 99
+        },
+        {
+          "path": "nova/conversation.py",
+          "line": 254,
+          "end_line": 274
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 154,
+      "to": 262,
+      "label": "Pre-check"
+    },
+    {
+      "from": 274,
+      "to": 410,
+      "label": "Route + retrieve"
+    },
+    {
+      "from": 422,
+      "to": 530,
+      "label": "Answer + gate"
+    },
+    {
+      "from": 542,
+      "to": 594,
+      "label": "Log + render"
+    }
+  ],
+  "messages": [
+    {
+      "id": "ask",
+      "from": "customer",
+      "to": "chat",
+      "y": 166,
+      "label": "question"
+    },
+    {
+      "id": "begin",
+      "from": "chat",
+      "to": "agent",
+      "y": 194,
+      "label": "begin_turn",
+      "variant": "emphasis"
+    },
+    {
+      "id": "precheck",
+      "from": "agent",
+      "to": "guard",
+      "y": 222,
+      "label": "check(question)",
+      "variant": "security"
+    },
+    {
+      "id": "allow",
+      "from": "guard",
+      "to": "agent",
+      "y": 250,
+      "label": "ALLOW / DEFLECT",
+      "variant": "return"
+    },
+    {
+      "id": "classify",
+      "from": "agent",
+      "to": "groq",
+      "y": 286,
+      "label": "classify → inquiry"
+    },
+    {
+      "id": "expand",
+      "from": "agent",
+      "to": "groq",
+      "y": 314,
+      "label": "expand_query"
+    },
+    {
+      "id": "expanded",
+      "from": "groq",
+      "to": "agent",
+      "y": 342,
+      "label": "expanded query",
+      "variant": "return"
+    },
+    {
+      "id": "search",
+      "from": "agent",
+      "to": "retriever",
+      "y": 370,
+      "label": "search(top_k=6)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "hits",
+      "from": "retriever",
+      "to": "agent",
+      "y": 398,
+      "label": "hits ≥ floor 0.30",
+      "variant": "return"
+    },
+    {
+      "id": "answer",
+      "from": "agent",
+      "to": "groq",
+      "y": 434,
+      "label": "stream grounded answer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "tokens",
+      "from": "groq",
+      "to": "agent",
+      "y": 462,
+      "label": "STATUS + [S#] tokens",
+      "variant": "return"
+    },
+    {
+      "id": "streamed",
+      "from": "agent",
+      "to": "chat",
+      "y": 490,
+      "label": "streamed text",
+      "variant": "return"
+    },
+    {
+      "id": "finish",
+      "from": "chat",
+      "to": "agent",
+      "y": 518,
+      "label": "finish_turn → gate"
+    },
+    {
+      "id": "log",
+      "from": "agent",
+      "to": "store",
+      "y": 554,
+      "label": "log_turn",
+      "variant": "dashed"
+    },
+    {
+      "id": "render",
+      "from": "chat",
+      "to": "customer",
+      "y": 582,
+      "label": "answer + sources",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "chat",
+      "from": 189,
+      "to": 588,
+      "type": "frontend"
+    },
+    {
+      "participant": "agent",
+      "from": 189,
+      "to": 560,
+      "type": "backend"
+    },
+    {
+      "participant": "guard",
+      "from": 217,
+      "to": 256,
+      "type": "security"
+    },
+    {
+      "participant": "groq",
+      "from": 281,
+      "to": 348,
+      "type": "cloud"
+    },
+    {
+      "participant": "retriever",
+      "from": 365,
+      "to": 404,
+      "type": "backend"
+    },
+    {
+      "participant": "groq",
+      "from": 429,
+      "to": 468,
+      "type": "cloud"
+    },
+    {
+      "participant": "store",
+      "from": 549,
+      "to": 560,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Happy path",
+      "items": [
+        "Guardrails allow, intent is an inquiry",
+        "Expanded query feeds hybrid search",
+        "120b streams a cited answer"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Early exits",
+      "items": [
+        "REFUSE or ESCALATE skip retrieval",
+        "Below the floor: refuse, no answer call",
+        "refund_request goes to the refund agent"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Degradation",
+      "items": [
+        "Utility call fails: original query used",
+        "Answer call fails: ERROR, offer a human",
+        "Confidence below 0.45: offer a human"
+      ]
+    }
+  ]
+}

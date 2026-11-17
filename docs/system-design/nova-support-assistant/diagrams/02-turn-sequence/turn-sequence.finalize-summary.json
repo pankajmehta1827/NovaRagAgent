@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "sequence",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/02-turn-sequence/candidate.json",
+    "sha256": "961f6a2d0f8dd71610e3128689c9996e8c9aa0dbf364738577bb7be35c0dde01",
+    "bytes": 6724
+  },
+  "artifact": {
+    "path": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/02-turn-sequence/turn-sequence.html",
+    "sha256": "c27be68410f5e423ad14e2ad179b33ec603798178e04aa8e3c92f29899093633",
+    "bytes": 766648
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/02-turn-sequence/turn-sequence.finalize.json",
+    "summaryReceipt": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/02-turn-sequence/turn-sequence.finalize-summary.json",
+    "browserCheckReceipt": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/02-turn-sequence/turn-sequence.browser-check.json"
+  },
+  "update": {
+    "status": "unavailable",
+    "installedVersion": null,
+    "availableVersion": null,
+    "releaseNotes": null,
+    "checkedAt": null,
+    "source": null,
+    "noticeRequired": false,
+    "noticeText": null,
+    "reason": "cache-valid"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3312
+}

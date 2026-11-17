@@ -1,0 +1,418 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Nova Support Assistant — System Architecture",
+    "output": "docs/system-design/nova-support-assistant/diagrams/01-architecture/architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/pankajmehta1827/NovaRagAgent",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "218666e53b81aa896b03b382685f2f76b71f8fc3"
+    }
+  },
+  "components": [
+    {
+      "id": "customer",
+      "type": "external",
+      "label": "Customer / Ops user",
+      "sublabel": "browser",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "signon",
+      "type": "security",
+      "label": "Sign-on gate",
+      "sublabel": "Google OIDC or demo",
+      "pos": [
+        250,
+        260
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "not authz",
+      "sources": [
+        {
+          "path": "nova/auth.py",
+          "line": 46,
+          "end_line": 111
+        },
+        {
+          "path": "streamlit_app.py",
+          "line": 32,
+          "end_line": 48
+        }
+      ]
+    },
+    {
+      "id": "google",
+      "type": "external",
+      "label": "Google OIDC",
+      "sublabel": "st.login / st.logout",
+      "pos": [
+        250,
+        90
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "nova/auth.py",
+          "line": 98,
+          "end_line": 111
+        }
+      ]
+    },
+    {
+      "id": "chat",
+      "type": "frontend",
+      "label": "Chat page",
+      "sublabel": "Streamlit customer surface",
+      "pos": [
+        470,
+        260
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "app_pages/chat.py",
+          "line": 12,
+          "end_line": 45
+        },
+        {
+          "path": "app_pages/chat.py",
+          "line": 350,
+          "end_line": 428
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "NovaAgent",
+      "sublabel": "guardrails → intent → route",
+      "pos": [
+        700,
+        260
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "nova/conversation.py",
+          "line": 51,
+          "end_line": 142
+        },
+        {
+          "path": "nova/guardrails.py",
+          "line": 130,
+          "end_line": 162
+        },
+        {
+          "path": "nova/intent.py",
+          "line": 71,
+          "end_line": 104
+        }
+      ]
+    },
+    {
+      "id": "groq",
+      "type": "cloud",
+      "label": "Groq API",
+      "sublabel": "gpt-oss-120b · gpt-oss-20b",
+      "pos": [
+        700,
+        90
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "nova/config.py",
+          "line": 35,
+          "end_line": 38
+        },
+        {
+          "path": "nova/llm.py",
+          "line": 35,
+          "end_line": 42
+        }
+      ]
+    },
+    {
+      "id": "retriever",
+      "type": "backend",
+      "label": "Hybrid retriever",
+      "sublabel": "BM25 + char 4-gram, RRF",
+      "pos": [
+        950,
+        260
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "nova/retriever.py",
+          "line": 68,
+          "end_line": 193
+        }
+      ]
+    },
+    {
+      "id": "refund",
+      "type": "backend",
+      "label": "Refund agent",
+      "sublabel": "deterministic rules",
+      "pos": [
+        700,
+        430
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "simulated",
+      "sources": [
+        {
+          "path": "nova/refund.py",
+          "line": 131,
+          "end_line": 227
+        },
+        {
+          "path": "nova/refund.py",
+          "line": 277,
+          "end_line": 453
+        }
+      ]
+    },
+    {
+      "id": "ops",
+      "type": "frontend",
+      "label": "Support Ops console",
+      "sublabel": "metrics · FAQ · kill switch",
+      "pos": [
+        250,
+        430
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "app_pages/ops_console.py",
+          "line": 1,
+          "end_line": 75
+        }
+      ]
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "runtime/ files",
+      "sublabel": "settings · JSONL logs",
+      "pos": [
+        470,
+        430
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "nova/store.py",
+          "line": 1,
+          "end_line": 110
+        },
+        {
+          "path": "nova/config.py",
+          "line": 15,
+          "end_line": 26
+        }
+      ]
+    },
+    {
+      "id": "ingest",
+      "type": "backend",
+      "label": "Ingest + sanitise",
+      "sublabel": "chunk · scrub · classify",
+      "pos": [
+        950,
+        430
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "nova/ingest.py",
+          "line": 393,
+          "end_line": 406
+        },
+        {
+          "path": "nova/sanitise.py",
+          "line": 1,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "type": "database",
+      "label": "Data/ sources",
+      "sublabel": "CSV · SQLite · PDF · JSON",
+      "pos": [
+        950,
+        600
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "nova/config.py",
+          "line": 17,
+          "end_line": 20
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "browse",
+      "from": "customer",
+      "to": "signon",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "oidc",
+      "from": "signon",
+      "to": "google",
+      "label": "OIDC",
+      "variant": "security"
+    },
+    {
+      "id": "enter",
+      "from": "signon",
+      "to": "chat",
+      "label": "session"
+    },
+    {
+      "id": "enter-ops",
+      "from": "signon",
+      "to": "ops",
+      "label": "same session"
+    },
+    {
+      "id": "turn",
+      "from": "chat",
+      "to": "agent",
+      "label": "turn",
+      "variant": "emphasis"
+    },
+    {
+      "id": "llm-calls",
+      "from": "agent",
+      "to": "groq",
+      "label": "classify · expand · answer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "search",
+      "from": "agent",
+      "to": "retriever",
+      "label": "search"
+    },
+    {
+      "id": "refund-route",
+      "from": "agent",
+      "to": "refund",
+      "label": "refund_request"
+    },
+    {
+      "id": "chat-store",
+      "from": "chat",
+      "to": "store",
+      "label": "settings · feedback"
+    },
+    {
+      "id": "turn-logs",
+      "from": "agent",
+      "to": "store",
+      "label": "turn logs",
+      "variant": "dashed"
+    },
+    {
+      "id": "ops-store",
+      "from": "ops",
+      "to": "store",
+      "label": "edits"
+    },
+    {
+      "id": "index",
+      "from": "ingest",
+      "to": "retriever",
+      "label": "90 chunks"
+    },
+    {
+      "id": "read-data",
+      "from": "data",
+      "to": "ingest",
+      "label": "read"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Answer path",
+      "items": [
+        "Guardrails run before retrieval",
+        "Lexical hybrid search, in-process",
+        "Confidence gate before trust"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Refund route",
+      "items": [
+        "LLM only classifies intent",
+        "Eligibility and ₹499 limit in code",
+        "Ledger copied per session"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust boundaries",
+      "items": [
+        "Groq is the only outbound model call",
+        "Sign-on gates, does not authorise",
+        "Ops console shares the same sign-in"
+      ]
+    }
+  ]
+}

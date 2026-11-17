@@ -1,0 +1,358 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Turn Routing — Guardrails, Intent, Confidence Gate",
+    "output": "docs/system-design/nova-support-assistant/diagrams/03-turn-routing/turn-routing.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/pankajmehta1827/NovaRagAgent",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "218666e53b81aa896b03b382685f2f76b71f8fc3"
+    }
+  },
+  "lanes": [
+    {
+      "id": "surface",
+      "label": "Customer surface"
+    },
+    {
+      "id": "routing",
+      "label": "Guardrails + routing"
+    },
+    {
+      "id": "rag",
+      "label": "RAG pipeline"
+    },
+    {
+      "id": "exits",
+      "label": "Refusal + handoff",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "intake",
+      "label": "Pre-check",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "route",
+      "label": "Route",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "answer",
+      "label": "Answer + gate",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "msg",
+    "guard",
+    "intent",
+    "retrieve",
+    "answer",
+    "confgate",
+    "reply"
+  ],
+  "nodes": [
+    {
+      "id": "msg",
+      "lane": "surface",
+      "col": 0,
+      "type": "external",
+      "label": "Customer message",
+      "sublabel": "chat input",
+      "width": 140
+    },
+    {
+      "id": "reply",
+      "lane": "surface",
+      "col": 5,
+      "type": "frontend",
+      "label": "Cited answer",
+      "sublabel": "with source list",
+      "width": 140,
+      "sources": [
+        {
+          "path": "app_pages/chat.py",
+          "line": 377,
+          "end_line": 405
+        }
+      ]
+    },
+    {
+      "id": "guard",
+      "lane": "routing",
+      "col": 1,
+      "type": "security",
+      "label": "Guardrails",
+      "sublabel": "first match wins",
+      "width": 140,
+      "sources": [
+        {
+          "path": "nova/guardrails.py",
+          "line": 130,
+          "end_line": 162
+        }
+      ]
+    },
+    {
+      "id": "intent",
+      "lane": "routing",
+      "col": 2,
+      "type": "backend",
+      "label": "Intent classify",
+      "sublabel": "20b, regex fallback",
+      "width": 140,
+      "sources": [
+        {
+          "path": "nova/intent.py",
+          "line": 71,
+          "end_line": 104
+        },
+        {
+          "path": "nova/conversation.py",
+          "line": 115,
+          "end_line": 142
+        }
+      ]
+    },
+    {
+      "id": "refund",
+      "lane": "routing",
+      "col": 3,
+      "type": "backend",
+      "label": "Refund agent",
+      "sublabel": "deterministic rules",
+      "width": 140,
+      "sources": [
+        {
+          "path": "nova/refund.py",
+          "line": 309,
+          "end_line": 397
+        }
+      ]
+    },
+    {
+      "id": "retrieve",
+      "lane": "rag",
+      "col": 3,
+      "type": "backend",
+      "label": "Expand + search",
+      "sublabel": "hybrid, top 6",
+      "width": 140,
+      "sources": [
+        {
+          "path": "nova/conversation.py",
+          "line": 86,
+          "end_line": 107
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "lane": "rag",
+      "col": 4,
+      "type": "cloud",
+      "label": "Grounded answer",
+      "sublabel": "120b, [S#] citations",
+      "width": 140,
+      "sources": [
+        {
+          "path": "nova/llm.py",
+          "line": 230,
+          "end_line": 331
+        }
+      ]
+    },
+    {
+      "id": "confgate",
+      "lane": "rag",
+      "col": 5,
+      "type": "security",
+      "label": "Confidence gate",
+      "sublabel": "score ≥ 0.45",
+      "width": 140,
+      "sources": [
+        {
+          "path": "nova/conversation.py",
+          "line": 159,
+          "end_line": 224
+        }
+      ]
+    },
+    {
+      "id": "refuse",
+      "lane": "exits",
+      "col": 1,
+      "type": "security",
+      "label": "Fixed refusal",
+      "sublabel": "emergency · credentials",
+      "width": 140,
+      "sources": [
+        {
+          "path": "nova/guardrails.py",
+          "line": 136,
+          "end_line": 140
+        }
+      ]
+    },
+    {
+      "id": "nover",
+      "lane": "exits",
+      "col": 4,
+      "type": "messagebus",
+      "label": "No verified answer",
+      "sublabel": "offer a human",
+      "width": 140,
+      "sources": [
+        {
+          "path": "nova/conversation.py",
+          "line": 98,
+          "end_line": 107
+        }
+      ]
+    },
+    {
+      "id": "handoff",
+      "lane": "exits",
+      "col": 5,
+      "type": "external",
+      "label": "Human handoff",
+      "sublabel": "live queue or ticket",
+      "width": 140,
+      "sources": [
+        {
+          "path": "nova/escalation.py",
+          "line": 25,
+          "end_line": 49
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "m-guard",
+      "from": "msg",
+      "to": "guard",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-intent",
+      "from": "guard",
+      "to": "intent",
+      "label": "allow / deflect",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-retrieve",
+      "from": "intent",
+      "to": "retrieve",
+      "label": "inquiry",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-answer",
+      "from": "retrieve",
+      "to": "answer",
+      "label": "≥ floor",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-gate",
+      "from": "answer",
+      "to": "confgate",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-reply",
+      "from": "confgate",
+      "to": "reply",
+      "label": "pass",
+      "variant": "emphasis"
+    },
+    {
+      "id": "to-refuse",
+      "from": "guard",
+      "to": "refuse",
+      "label": "refuse",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "to-escalate",
+      "from": "guard",
+      "to": "handoff",
+      "label": "escalate",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "to-refund",
+      "from": "intent",
+      "to": "refund",
+      "label": "refund",
+      "role": "branch"
+    },
+    {
+      "id": "below-floor",
+      "from": "retrieve",
+      "to": "nover",
+      "label": "below floor",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "low-conf",
+      "from": "confgate",
+      "to": "handoff",
+      "label": "low, twice",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "accept",
+      "from": "nover",
+      "to": "handoff",
+      "label": "accept",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Guardrails first",
+      "items": [
+        "Emergency and credentials: fixed refusal",
+        "Human request, fraud, disputes: escalate",
+        "Account questions: answer + deflection note"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Grounding gate",
+      "items": [
+        "Relevance floor 0.30 skips the answer call",
+        "Gate = 0.45 retrieval + 0.2 agreement + 0.35 citation",
+        "Second ungrounded turn escalates"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Refund branch",
+      "items": [
+        "A pending refund owns the next message",
+        "Replies are fixed text, never generated",
+        "Guardrails still outrank it"
+      ]
+    }
+  ]
+}

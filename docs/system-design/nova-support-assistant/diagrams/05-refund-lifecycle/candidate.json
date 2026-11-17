@@ -1,0 +1,57 @@
+{
+  "schema_version": 2,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Refund Request Lifecycle",
+    "output": "docs/system-design/nova-support-assistant/diagrams/05-refund-lifecycle/refund-lifecycle.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/pankajmehta1827/NovaRagAgent",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "218666e53b81aa896b03b382685f2f76b71f8fc3"
+    }
+  },
+  "lanes": [
+    { "id": "main", "label": "Refund path" },
+    { "id": "waiting", "label": "Waiting on customer" },
+    { "id": "handoff", "label": "Support Team review" },
+    { "id": "terminal", "label": "Terminal exits" }
+  ],
+  "states": [
+    { "id": "requested", "type": "start", "label": "Requested", "sublabel": "intent = refund", "lane": "main", "col": 0, "step": "01",
+      "sources": [ { "path": "nova/refund.py", "line": 319, "end_line": 359 } ] },
+    { "id": "validated", "type": "decision", "label": "Validated", "sublabel": "eligibility in code", "lane": "main", "col": 1, "step": "02", "tag": "limit ₹499",
+      "sources": [ { "path": "nova/refund.py", "line": 131, "end_line": 187 }, { "path": "nova/refund.py", "line": 363, "end_line": 397 } ] },
+    { "id": "awaiting_confirmation", "type": "waiting", "label": "Awaiting yes/no", "sublabel": "explicit confirmation", "lane": "main", "col": 2, "step": "03",
+      "sources": [ { "path": "nova/refund.py", "line": 401, "end_line": 413 } ] },
+    { "id": "confirmed", "type": "active", "label": "Confirmed", "sublabel": "re-validate first", "lane": "main", "col": 3, "step": "04",
+      "sources": [ { "path": "nova/refund.py", "line": 415, "end_line": 431 } ] },
+    { "id": "processed", "type": "success", "label": "Processed", "sublabel": "simulated ref_ id", "lane": "main", "col": 4, "step": "05",
+      "sources": [ { "path": "nova/refund.py", "line": 190, "end_line": 210 } ] },
+    { "id": "awaiting_amount", "type": "waiting", "label": "Awaiting amount", "sublabel": "never invented", "lane": "waiting", "col": 0,
+      "sources": [ { "path": "nova/refund.py", "line": 331, "end_line": 356 } ] },
+    { "id": "submitted", "type": "external", "label": "Submitted", "sublabel": "sup_ reference only", "lane": "handoff", "col": 1,
+      "sources": [ { "path": "nova/refund.py", "line": 213, "end_line": 227 } ] },
+    { "id": "rejected", "type": "failure", "label": "Rejected", "sublabel": "reason shown", "lane": "terminal", "col": 1 },
+    { "id": "cancelled", "type": "failure", "label": "Cancelled", "sublabel": "nothing refunded", "lane": "terminal", "col": 2,
+      "sources": [ { "path": "nova/refund.py", "line": 449, "end_line": 453 } ] }
+  ],
+  "transitions": [
+    { "from": "requested", "to": "validated", "label": "amount known" },
+    { "from": "validated", "to": "awaiting_confirmation", "label": "≤ ₹499" },
+    { "from": "awaiting_confirmation", "to": "confirmed", "label": "yes" },
+    { "from": "confirmed", "to": "processed", "variant": "emphasis" },
+    { "from": "requested", "to": "awaiting_amount", "label": "which?", "variant": "dashed" },
+    { "from": "awaiting_amount", "to": "validated", "label": "amount" },
+    { "from": "validated", "to": "submitted", "label": "> ₹499", "variant": "dashed" },
+    { "from": "validated", "to": "rejected", "label": "ineligible", "variant": "security" },
+    { "from": "awaiting_confirmation", "to": "cancelled", "label": "no", "variant": "security" },
+    { "from": "confirmed", "to": "rejected", "label": "re-check fails", "variant": "security" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Rules in code", "items": ["Completed, ≤ 7 days old, not refunded", "Amount ≤ the matched recharge", "LLM never calls process_refund"] },
+    { "dot": "amber", "title": "Confirmation", "items": ["Ambiguous replies ask again", "A pending state owns the next message", "Re-validated right before execution"] },
+    { "dot": "rose", "title": "Above the limit", "items": ["Submitted to the Support Team", "Outcome is never simulated or claimed", "Reference returned to the customer"] }
+  ]
+}

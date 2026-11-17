@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/01-architecture/candidate.json",
+    "sha256": "ee66fc99e37cc8af9459203e60334a13b5cfa35bd01737b46acd87a97057db15",
+    "bytes": 7939
+  },
+  "artifact": {
+    "path": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/01-architecture/architecture.html",
+    "sha256": "07c5d3c5c0d3f1416a92d500a2811a0321f0bb2e2719be3ad076e703bb06dcd1",
+    "bytes": 773642
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/01-architecture/architecture.finalize.json",
+    "summaryReceipt": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/01-architecture/architecture.finalize-summary.json",
+    "browserCheckReceipt": "/home/user/NovaRagAgent/docs/system-design/nova-support-assistant/diagrams/01-architecture/architecture.browser-check.json"
+  },
+  "update": {
+    "status": "unavailable",
+    "installedVersion": null,
+    "availableVersion": null,
+    "releaseNotes": null,
+    "checkedAt": null,
+    "source": null,
+    "noticeRequired": false,
+    "noticeText": null,
+    "reason": "cache-valid"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3760
+}

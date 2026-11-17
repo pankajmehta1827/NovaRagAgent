@@ -1,0 +1,353 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Knowledge Ingestion — From Sources to Grounded Prompt",
+    "output": "docs/system-design/nova-support-assistant/diagrams/04-knowledge-dataflow/knowledge-dataflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/pankajmehta1827/NovaRagAgent",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "218666e53b81aa896b03b382685f2f76b71f8fc3"
+    },
+    "viewBox": [
+      1080,
+      640
+    ]
+  },
+  "stages": [
+    {
+      "label": "Sources"
+    },
+    {
+      "label": "Load + gate"
+    },
+    {
+      "label": "Index"
+    },
+    {
+      "label": "Retrieve"
+    },
+    {
+      "label": "Consume"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "faq",
+      "type": "database",
+      "label": "faq.csv",
+      "sublabel": "FAQ + ops overrides",
+      "stage": 0,
+      "row": 0,
+      "sources": [
+        {
+          "path": "nova/ingest.py",
+          "line": 70,
+          "end_line": 129
+        }
+      ]
+    },
+    {
+      "id": "tickets",
+      "type": "database",
+      "label": "tickets.db",
+      "sublabel": "SQLite tickets",
+      "stage": 0,
+      "row": 1,
+      "sources": [
+        {
+          "path": "nova/ingest.py",
+          "line": 132,
+          "end_line": 193
+        }
+      ]
+    },
+    {
+      "id": "guide",
+      "type": "database",
+      "label": "telecom_guide.pdf",
+      "sublabel": "Internal Use Only",
+      "stage": 0,
+      "row": 2,
+      "sources": [
+        {
+          "path": "nova/ingest.py",
+          "line": 196,
+          "end_line": 305
+        }
+      ]
+    },
+    {
+      "id": "plans",
+      "type": "database",
+      "label": "plans.json",
+      "sublabel": "price catalog",
+      "stage": 0,
+      "row": 3,
+      "sources": [
+        {
+          "path": "nova/ingest.py",
+          "line": 355,
+          "end_line": 389
+        }
+      ]
+    },
+    {
+      "id": "faqload",
+      "type": "backend",
+      "label": "FAQ loader",
+      "sublabel": "ops overrides merged",
+      "stage": 1,
+      "row": 0,
+      "sources": [
+        {
+          "path": "nova/ingest.py",
+          "line": 70,
+          "end_line": 129
+        }
+      ]
+    },
+    {
+      "id": "scrub",
+      "type": "security",
+      "label": "Ticket sanitiser",
+      "sublabel": "PII scrub · redact",
+      "stage": 1,
+      "row": 1,
+      "tag": "TK-020 excluded",
+      "sources": [
+        {
+          "path": "nova/sanitise.py",
+          "line": 1,
+          "end_line": 60
+        },
+        {
+          "path": "nova/ingest.py",
+          "line": 152,
+          "end_line": 168
+        }
+      ]
+    },
+    {
+      "id": "gate",
+      "type": "security",
+      "label": "Guide classifier",
+      "sublabel": "customer-safe gate",
+      "stage": 1,
+      "row": 2,
+      "sources": [
+        {
+          "path": "nova/ingest.py",
+          "line": 274,
+          "end_line": 290
+        }
+      ],
+      "tag": "17 withheld"
+    },
+    {
+      "id": "planload",
+      "type": "backend",
+      "label": "Plan loader",
+      "sublabel": "one chunk per plan",
+      "stage": 1,
+      "row": 3,
+      "sources": [
+        {
+          "path": "nova/ingest.py",
+          "line": 355,
+          "end_line": 389
+        }
+      ]
+    },
+    {
+      "id": "index",
+      "type": "database",
+      "label": "Chunk index",
+      "sublabel": "90 chunks in memory",
+      "stage": 2,
+      "row": 0,
+      "sources": [
+        {
+          "path": "nova/ingest.py",
+          "line": 393,
+          "end_line": 406
+        }
+      ],
+      "yOffset": 0,
+      "height": 400
+    },
+    {
+      "id": "retriever",
+      "type": "backend",
+      "label": "Hybrid retriever",
+      "sublabel": "RRF + trust tilt",
+      "stage": 3,
+      "row": 1,
+      "sources": [
+        {
+          "path": "nova/retriever.py",
+          "line": 148,
+          "end_line": 193
+        }
+      ],
+      "yOffset": 57
+    },
+    {
+      "id": "prompt",
+      "type": "cloud",
+      "label": "Answer prompt",
+      "sublabel": "gpt-oss-120b",
+      "stage": 4,
+      "row": 1,
+      "sources": [
+        {
+          "path": "nova/llm.py",
+          "line": 185,
+          "end_line": 215
+        }
+      ],
+      "yOffset": 57
+    }
+  ],
+  "flows": [
+    {
+      "id": "faq-in",
+      "from": "faq",
+      "to": "faqload",
+      "label": "rows",
+      "classification": "public",
+      "variant": "default"
+    },
+    {
+      "id": "tickets-in",
+      "from": "tickets",
+      "to": "scrub",
+      "label": "rows",
+      "classification": "contains PII",
+      "variant": "security"
+    },
+    {
+      "id": "guide-in",
+      "from": "guide",
+      "to": "gate",
+      "label": "paragraphs",
+      "classification": "internal",
+      "variant": "security"
+    },
+    {
+      "id": "plans-in",
+      "from": "plans",
+      "to": "planload",
+      "label": "entries",
+      "classification": "versioned",
+      "variant": "default"
+    },
+    {
+      "id": "faq-idx",
+      "from": "faqload",
+      "to": "index",
+      "label": "25 Q&A",
+      "classification": "trust 3",
+      "variant": "emphasis",
+      "labelAt": [
+        412,
+        143
+      ],
+      "route": "vertical-channel",
+      "channelX": 462,
+      "labelSegment": 0
+    },
+    {
+      "id": "tickets-idx",
+      "from": "scrub",
+      "to": "index",
+      "label": "19 tickets",
+      "classification": "trust 1",
+      "variant": "emphasis",
+      "labelAt": [
+        412,
+        257
+      ],
+      "route": "vertical-channel",
+      "channelX": 462,
+      "labelSegment": 0
+    },
+    {
+      "id": "guide-idx",
+      "from": "gate",
+      "to": "index",
+      "label": "32 sections",
+      "classification": "trust 2",
+      "variant": "emphasis",
+      "labelAt": [
+        412,
+        371
+      ],
+      "route": "vertical-channel",
+      "channelX": 462,
+      "labelSegment": 0
+    },
+    {
+      "id": "plans-idx",
+      "from": "planload",
+      "to": "index",
+      "label": "14 plans",
+      "classification": "trust 4",
+      "variant": "emphasis",
+      "labelAt": [
+        412,
+        485
+      ],
+      "route": "vertical-channel",
+      "channelX": 462,
+      "labelSegment": 0
+    },
+    {
+      "id": "search",
+      "from": "index",
+      "to": "retriever",
+      "label": "chunks",
+      "classification": "lexical",
+      "variant": "emphasis"
+    },
+    {
+      "id": "top-k",
+      "from": "retriever",
+      "to": "prompt",
+      "label": "top 6",
+      "classification": "untrusted data",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Launch-blocker gates",
+      "items": [
+        "TK-020 excluded: not resolved",
+        "14 tickets kept as agent-only outcomes",
+        "17 internal guide sections withheld, listed in Ops"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Trust order",
+      "items": [
+        "plans 4 > FAQ 3 > guide 2 > ticket 1",
+        "Max 3 chunks per source",
+        "Retrieved text is data, not instructions"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Republish",
+      "items": [
+        "Ops edits write runtime/ JSON",
+        "Republish clears the cached agent",
+        "Index rebuilds on the next request"
+      ]
+    }
+  ]
+}
